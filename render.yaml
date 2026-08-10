@@ -13,7 +13,11 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    # --include=dev is required: NODE_ENV=production below makes a bare `npm ci`
+    # skip devDependencies, and TypeScript lives there, so the build would fail
+    # with "tsc: command not found". Only compiled JS and production
+    # dependencies are needed at runtime.
+    buildCommand: npm ci --include=dev && npm run build
     # Migrations run on every deploy; the runner is idempotent and skips
     # anything already applied. The seed only inserts demo data on an empty DB.
     startCommand: npm run migrate:prod && npm run seed:prod && npm start
@@ -43,7 +47,8 @@ services:
     name: erp-crm-web
     runtime: static
     rootDir: frontend
-    buildCommand: npm ci && npm run build
+    # Vite and TypeScript are devDependencies, so the same --include=dev applies.
+    buildCommand: npm ci --include=dev && npm run build
     staticPublishPath: dist
     envVars:
       # Must point at the deployed API, including the /api/v1 suffix.
