@@ -214,13 +214,42 @@ async function downloadFile(path: string, fallbackFilename: string): Promise<voi
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
 }
 
+/**
+ * PUT a file straight to object storage using a presigned URL.
+ *
+ * Deliberately bypasses the normal client: the request goes to S3, not the API,
+ * so it must carry no Authorization header, and the Content-Type must match the
+ * one that was signed or storage rejects the upload.
+ */
+async function uploadToPresignedUrl(
+  uploadUrl: string,
+  file: File,
+  headers: Record<string, string>,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(uploadUrl, { method: 'PUT', headers, body: file });
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Could not reach the storage service.');
+  }
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      'UPLOAD_FAILED',
+      `The file could not be uploaded to storage (status ${response.status}).`,
+    );
+  }
+}
+
 export const api = {
   get: <T>(path: string, params?: QueryParams, signal?: AbortSignal) =>
     apiFetch<T>(path, { method: 'GET', params, signal }),
   post: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     apiFetch<T>(path, { ...options, method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
+  delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
   download: downloadFile,
+  uploadToPresignedUrl,
 };
 
 export { API_BASE_URL };

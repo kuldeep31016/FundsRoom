@@ -96,6 +96,12 @@ export interface Product {
   minStockAlert: number;
   location: string | null;
   isActive: boolean;
+  imageKey: string | null;
+  imageMimeType: string | null;
+  imageSize: number | null;
+  imageUpdatedAt: string | null;
+  /** Presigned or public URL; null when storage is unconfigured or no image. */
+  imageUrl: string | null;
   isLowStock: boolean;
   stockValue: number;
   createdBy: string | null;
@@ -176,3 +182,18 @@ export interface DashboardSummary {
   upcomingFollowUps: Customer[];
   recentChallans: Challan[];
 }
+
+export interface PresignedUpload {
+  uploadUrl: string;
+  key: string;
+  expiresInSeconds: number;
+  maxBytes: number;
+  requiredHeaders: Record<string, string>;
+}
+
+export const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+] as const;
