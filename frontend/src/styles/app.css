@@ -1214,6 +1214,71 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* === Product image uploader ============================================== */
+
+.image-uploader {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+}
+
+.image-uploader__preview {
+  flex-shrink: 0;
+  width: 132px;
+  height: 132px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.image-uploader__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-uploader__placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-subtle);
+  font-size: 34px;
+}
+
+.image-uploader__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* Thumbnail in the product list. */
+.product-thumb {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.product-thumb--empty {
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-alt);
+  color: var(--color-text-subtle);
+  font-size: 15px;
+}
+
+.product-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 /* === Utilities =========================================================== */
 
 .stack {
