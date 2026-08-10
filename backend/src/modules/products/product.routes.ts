@@ -5,8 +5,10 @@ import { asyncHandler } from '../../utils/async-handler';
 import { paginationQuerySchema } from '../../validation/common';
 import * as controller from './product.controller';
 import {
+  attachProductImageSchema,
   createProductSchema,
   productIdParamSchema,
+  productImageUploadUrlSchema,
   productListQuerySchema,
   updateProductSchema,
 } from './product.schema';
@@ -52,6 +54,31 @@ router.put(
   validateParams(productIdParamSchema),
   validateBody(updateProductSchema),
   asyncHandler(controller.updateProduct),
+);
+
+// Image upload is a two-step, direct-to-S3 flow so large files never pass
+// through the API process.
+router.post(
+  '/:id/image/upload-url',
+  requirePermission('products:write'),
+  validateParams(productIdParamSchema),
+  validateBody(productImageUploadUrlSchema),
+  asyncHandler(controller.createImageUploadUrl),
+);
+
+router.post(
+  '/:id/image',
+  requirePermission('products:write'),
+  validateParams(productIdParamSchema),
+  validateBody(attachProductImageSchema),
+  asyncHandler(controller.attachImage),
+);
+
+router.delete(
+  '/:id/image',
+  requirePermission('products:write'),
+  validateParams(productIdParamSchema),
+  asyncHandler(controller.removeImage),
 );
 
 router.get(
