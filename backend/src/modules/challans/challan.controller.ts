@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { requireUser } from '../../middleware/auth.middleware';
 import { sendCreated, sendOk, sendPaginated } from '../../utils/http';
 import { serializeChallan } from '../../utils/serializers';
+import { buildChallanPdf } from './challan.pdf';
 import * as service from './challan.service';
 import type {
   CancelChallanInput,
@@ -50,6 +51,28 @@ export async function confirmChallan(req: Request, res: Response): Promise<void>
   const user = requireUser(req);
   const { challan, items } = await service.confirm(req.params.id as string, user.id);
   sendOk(res, serializeChallan(challan, items));
+}
+
+/**
+ * GET /challans/:id/pdf
+ *
+ * Returns the challan as a printable PDF built from its stored snapshot data.
+ * The document is generated in full before any bytes are written, so a failure
+ * still produces the normal JSON error envelope rather than a truncated file.
+ */
+export async function downloadChallanPdf(req: Request, res: Response): Promise<void> {
+  const { challan, items } = await service.getById(req.params.id as string);
+  const pdf = await buildChallanPdf(challan, items);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', pdf.length);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${challan.challan_number}.pdf"`,
+  );
+  // The document changes when the challan is confirmed or cancelled.
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(200).end(pdf);
 }
 
 /** POST /challans/:id/cancel */

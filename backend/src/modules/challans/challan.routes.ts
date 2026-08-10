@@ -36,6 +36,14 @@ router.get(
   asyncHandler(controller.getChallan),
 );
 
+// Declared before the generic "/:id" handlers so the suffix is not swallowed.
+router.get(
+  '/:id/pdf',
+  requirePermission('challans:read'),
+  validateParams(challanIdParamSchema),
+  asyncHandler(controller.downloadChallanPdf),
+);
+
 router.patch(
   '/:id',
   requirePermission('challans:write'),
