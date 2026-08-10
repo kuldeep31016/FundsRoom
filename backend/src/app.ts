@@ -4,6 +4,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
+import { ApiError, ERROR_CODES } from './utils/api-error';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { requestContext, requestLogger } from './middleware/request-context.middleware';
 import apiRoutes from './routes';
@@ -29,7 +30,16 @@ export function createApp(): Express {
         if (env.corsOrigins.includes('*') || env.corsOrigins.includes(origin)) {
           return callback(null, true);
         }
-        return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        // Rejected as an explicit 403 rather than a generic Error, which would
+        // surface as a 500 with a stack trace. A misconfigured CORS_ORIGINS is
+        // the most common deployment mistake, so the message names the fix.
+        return callback(
+          new ApiError(
+            403,
+            ERROR_CODES.FORBIDDEN,
+            `Origin ${origin} is not allowed by CORS. Add it to the CORS_ORIGINS environment variable.`,
+          ),
+        );
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
