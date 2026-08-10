@@ -78,6 +78,13 @@ The operational flow the system models:
   company letterhead, status watermark for draft/cancelled documents, pagination and signature
   blocks
 
+**Product images**
+- Optional photo per product, uploaded **directly to S3** via a presigned URL so files
+  never pass through the API process
+- Works against AWS S3 in production and MinIO locally — identical code, one env var apart
+- Degrades gracefully: with no bucket configured the endpoints return a clear 503 and the
+  uploader is hidden, so the rest of the portal is unaffected
+
 **Dashboard**
 - Aggregated counters, inventory valuation, low-stock watchlist, due follow-ups, recent challans
 
@@ -99,6 +106,7 @@ The operational flow the system models:
 | Validation | Zod | One schema per endpoint, coerced and typed |
 | Auth | `jsonwebtoken` + `bcryptjs` | Stateless JWT; pure-JS bcrypt avoids native build issues on free hosts |
 | PDF | `pdfkit` | Server-side challan rendering with no headless browser to host |
+| Object storage | `@aws-sdk/client-s3` | Presigned direct-to-S3 uploads; MinIO for local dev and tests |
 | Frontend | React 18 + Vite | Assignment requirement; fast builds |
 | Routing | React Router 6 | Standard SPA routing |
 | Styling | Hand-written CSS with design tokens | No UI framework needed for this surface area; keeps the bundle small |
@@ -409,6 +417,9 @@ captured automatically for the remaining requests.
 | `POST` | `/challans/:id/confirm` | `challans:confirm` | Confirm and deduct stock |
 | `POST` | `/challans/:id/cancel` | `challans:cancel` | Cancel, returning stock if confirmed |
 | `GET` | `/challans/:id/pdf` | `challans:read` | Download the challan as a printable PDF |
+| `POST` | `/products/:id/image/upload-url` | `products:write` | Presign a direct-to-S3 image upload |
+| `POST` | `/products/:id/image` | `products:write` | Attach the uploaded object to the product |
+| `DELETE` | `/products/:id/image` | `products:write` | Remove the image and delete the object |
 | `GET` | `/dashboard/summary` | `dashboard:read` | Aggregated dashboard payload |
 | `GET` | `/users` | `users:read` | List portal accounts |
 | `POST` | `/users` | `users:write` | Create a portal account |
@@ -464,6 +475,15 @@ No secret is committed. `.env` is git-ignored; `.env.example` documents every va
 | `COMPANY_GSTIN` | no | *(sample GSTIN)* | Letterhead GSTIN |
 | `COMPANY_PHONE` | no | *(sample number)* | Letterhead phone |
 | `COMPANY_EMAIL` | no | *(sample address)* | Letterhead email |
+| `S3_BUCKET` | no | — | Bucket for product images. **Leave unset to disable image upload.** |
+| `S3_REGION` | no | `ap-south-1` | AWS region |
+| `S3_ACCESS_KEY_ID` | no | — | Access key (required with `S3_BUCKET`) |
+| `S3_SECRET_ACCESS_KEY` | no | — | Secret key (required with `S3_BUCKET`) |
+| `S3_ENDPOINT` | no | — | Only for S3-compatible services such as MinIO; **leave unset for AWS** |
+| `S3_FORCE_PATH_STYLE` | no | `false` | `true` for MinIO |
+| `S3_PUBLIC_BASE_URL` | no | — | CDN/bucket URL. When unset, presigned GET URLs are issued |
+| `S3_UPLOAD_URL_TTL_SECONDS` | no | `300` | Lifetime of an upload URL |
+| `S3_MAX_UPLOAD_BYTES` | no | `5242880` | Maximum image size (5 MB) |
 
 The application validates this configuration with Zod at boot and refuses to start on a missing or
 invalid value, rather than failing confusingly later. Nothing outside `src/config/env.ts` reads
@@ -503,12 +523,13 @@ openssl rand -base64 48
 ### 2. Start PostgreSQL
 
 ```bash
-docker compose up -d db
+docker compose up -d db storage storage-init
 ```
 
 This starts PostgreSQL 16 on **port 5433** (chosen to avoid clashing with an existing local
 install) and creates both `erp_crm` and `erp_crm_test`. The defaults in `backend/.env.example`
-already point at it.
+already point at it. It also starts MinIO on **port 9000** (console on 9001) and creates the
+product-image bucket, so the image-upload feature works locally without an AWS account.
 
 <details>
 <summary>Using an existing PostgreSQL install instead</summary>
@@ -554,7 +575,7 @@ cd frontend && npm run build && npm run preview   # static build in dist/
 
 ## Testing
 
-**229 integration tests across 8 files**, run against a real PostgreSQL database so constraints,
+**246 integration tests across 9 files**, run against a real PostgreSQL database so constraints,
 transactions and row locks are genuinely exercised.
 
 ```bash
@@ -575,6 +596,7 @@ development data.
 | `tests/challans.test.ts` | 38 | Draft/confirmed creation, auto-numbering (incl. under concurrency), multi-product totals, duplicate-line merging, all six business rules, snapshot immutability after the product changes, confirm/cancel/edit transitions, concurrent confirmation safety |
 | `tests/rbac.test.ts` | 75 | Every role against every module: reads, writes, confirm, cancel, user admin, unauthenticated access, and 401-vs-403 correctness |
 | `tests/challan-pdf.test.ts` | 10 | Valid PDF structure and EOF marker, filename and cache headers, accurate Content-Length, rendering in all three statuses, multi-page pagination, per-role access and JSON (not PDF) errors |
+| `tests/product-images.test.ts` | 15 | Real S3 round trip against MinIO: presign, direct upload, attach, read back identical bytes, replace-and-delete-old, remove; content-type and size rejection, cross-product key theft, unknown key, RBAC, plus the storage-disabled 503 path |
 | `tests/error-handling.test.ts` | 15 | Database error translation, 500s that leak no internals, dashboard aggregation, database-level integrity invariants |
 
 Highlights worth reviewing:
@@ -769,7 +791,8 @@ Stated plainly rather than hidden:
    full-text or dedicated search index would be needed far beyond that.
 10. **Rate limiting is in-process.** With multiple instances each holds its own counter; a shared
     Redis store would be needed for a strict global limit.
-11. **No file uploads.** Product images (an optional bonus requiring AWS S3) are not implemented.
+11. **Product images are not resized or virus-scanned.** The type and size are validated server-side
+    against what actually landed in the bucket, but no thumbnailing pipeline or malware scan runs.
 12. **Single currency and locale.** INR and `en-GB` formatting are hard-coded in the formatter.
     PDF documents print `Rs.` rather than the rupee glyph, because PDFKit's built-in fonts have no
     code point for it; embedding a Unicode font would fix this.
@@ -798,9 +821,12 @@ Only after every mandatory requirement was complete:
   company letterhead, a diagonal watermark on draft/cancelled documents, automatic pagination for
   long challans, totals and signature blocks. Built from the line-item snapshot, so a reprinted
   challan always matches the original. Covered by 10 tests.
+- **Product image upload to S3** — presigned direct-to-storage uploads with server-side
+  re-validation of what was actually stored, automatic cleanup of replaced objects, and graceful
+  degradation when no bucket is configured. Verified end to end against MinIO (a real S3 API), so
+  the same code path runs unchanged against AWS.
 - **Docker** — multi-stage, non-root images for both apps plus a Compose stack (`--profile app`)
 - **GitHub Actions CI** — typecheck, build, migrate, full test suite against a live PostgreSQL
   service container, and a committed-secrets check
 
-Not implemented: S3 product image upload. It requires an AWS account and live credentials, and a
-version that cannot be run or tested would be worse than leaving it out.
+All four optional bonus items are implemented.
