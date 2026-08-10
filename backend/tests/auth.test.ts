@@ -193,6 +193,23 @@ describe('Authentication', () => {
       expect(response.body.data.database).toBe('connected');
     });
 
+    it('rejects a disallowed CORS origin with 403, not 500', async () => {
+      // A misconfigured CORS_ORIGINS must produce an actionable error rather
+      // than an opaque 500 with a stack trace in the logs.
+      const response = await request
+        .get(`${BASE}/health`)
+        .set('Origin', 'https://not-an-allowed-origin.test');
+
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect(response.body.error.message).toContain('CORS_ORIGINS');
+    });
+
+    it('allows a request with no Origin header (curl, Postman, health checks)', async () => {
+      const response = await request.get(`${BASE}/health`);
+      expect(response.status).toBe(200);
+    });
+
     it('returns 404 with the standard envelope for an unknown route', async () => {
       const response = await request.get(`${BASE}/does-not-exist`);
       expect(response.status).toBe(404);
