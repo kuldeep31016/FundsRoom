@@ -36,6 +36,26 @@ const envSchema = z.object({
   // Password assigned to every seeded demo user. Never used outside seeding.
   SEED_DEFAULT_PASSWORD: z.string().min(8).default('Password@123'),
 
+  // Object storage for product images (AWS S3, or any S3-compatible service).
+  // When S3_BUCKET is absent the feature degrades gracefully: the upload
+  // endpoints return 503 and the frontend hides the uploader, so the rest of the
+  // application runs unchanged for anyone without an AWS account.
+  S3_BUCKET: z.string().min(1).optional(),
+  S3_REGION: z.string().default('ap-south-1'),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  // Set only for S3-compatible services such as MinIO; leave unset for AWS.
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  // Public base URL for stored objects (CloudFront, or the bucket's own URL).
+  // When unset, images are served through short-lived presigned GET URLs.
+  S3_PUBLIC_BASE_URL: z.string().url().optional(),
+  S3_UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().positive().max(3600).default(300),
+  S3_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
+
   // Letterhead printed on generated challan PDFs.
   COMPANY_NAME: z.string().default('Shreeji Wholesale Distributors'),
   COMPANY_ADDRESS: z
@@ -48,7 +68,16 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
 });
 
-const parsed = envSchema.safeParse(process.env);
+/**
+ * Hosting dashboards commonly leave an unused variable present but blank.
+ * Treating "" as absent means a blank S3_BUCKET disables image upload cleanly
+ * instead of failing schema validation and refusing to boot.
+ */
+const rawEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([, value]) => value !== ''),
+);
+
+const parsed = envSchema.safeParse(rawEnvironment);
 
 if (!parsed.success) {
   const issues = parsed.error.issues
@@ -67,6 +96,10 @@ export const env = {
   isProduction: raw.NODE_ENV === 'production',
   isTest: raw.NODE_ENV === 'test',
   isDevelopment: raw.NODE_ENV === 'development',
+  // Image upload is only available once a bucket and credentials are configured.
+  isStorageConfigured: Boolean(
+    raw.S3_BUCKET && raw.S3_ACCESS_KEY_ID && raw.S3_SECRET_ACCESS_KEY,
+  ),
 } as const;
 
 export type Env = typeof env;
