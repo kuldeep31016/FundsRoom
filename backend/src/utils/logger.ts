@@ -32,6 +32,31 @@ function emit(level: Level, message: string, context?: unknown): void {
   }
 }
 
+/**
+ * Turn an unknown thrown value into something worth reading in a deploy log.
+ *
+ * Node reports a failed TCP connection as an `AggregateError` (one entry per
+ * resolved address), and its `.message` is an empty string — so naively logging
+ * `error.message` prints nothing at exactly the moment the operator needs the
+ * reason. This unwraps aggregates, `cause` chains and error codes.
+ */
+export function describeError(error: unknown): string {
+  if (error instanceof AggregateError && error.errors.length > 0) {
+    const parts = error.errors.map((inner) => describeError(inner));
+    return [...new Set(parts)].join('; ');
+  }
+
+  if (error instanceof Error) {
+    const code = (error as { code?: string }).code;
+    const base = error.message || error.name;
+    const withCode = code ? `${base} (${code})` : base;
+    const cause = (error as { cause?: unknown }).cause;
+    return cause ? `${withCode} — caused by: ${describeError(cause)}` : withCode;
+  }
+
+  return typeof error === 'string' ? error : JSON.stringify(error);
+}
+
 export const logger = {
   debug: (message: string, context?: unknown) => emit('debug', message, context),
   info: (message: string, context?: unknown) => emit('info', message, context),

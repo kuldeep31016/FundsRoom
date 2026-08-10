@@ -1,7 +1,7 @@
 import { createApp, API_PREFIX } from './app';
 import { env } from './config/env';
 import { closePool, pool } from './db/pool';
-import { logger } from './utils/logger';
+import { describeError, logger } from './utils/logger';
 
 async function bootstrap(): Promise<void> {
   // Fail fast with a clear message if the database is unreachable.
@@ -9,9 +9,9 @@ async function bootstrap(): Promise<void> {
     await pool.query('SELECT 1');
     logger.info('Database connection established');
   } catch (error) {
-    logger.error('Unable to connect to the database — check DATABASE_URL', {
-      message: error instanceof Error ? error.message : error,
-    });
+    logger.error(
+      `Unable to connect to the database — check DATABASE_URL and DATABASE_SSL: ${describeError(error)}`,
+    );
     process.exit(1);
   }
 

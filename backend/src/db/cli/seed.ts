@@ -1,7 +1,7 @@
 import { env } from '../../config/env';
 import { closePool } from '../pool';
 import { runSeed, SEED_USERS } from '../seed';
-import { logger } from '../../utils/logger';
+import { describeError, logger } from '../../utils/logger';
 
 runSeed()
   .then(async () => {
@@ -14,7 +14,7 @@ runSeed()
     process.exit(0);
   })
   .catch(async (error: unknown) => {
-    logger.error('Seed failed', error instanceof Error ? error.message : error);
+    logger.error(`Seed failed: ${describeError(error)}`);
     await closePool().catch(() => undefined);
     process.exit(1);
   });

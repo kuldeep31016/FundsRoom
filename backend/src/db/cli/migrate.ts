@@ -6,7 +6,7 @@
  */
 import { closePool } from '../pool';
 import { getAppliedMigrations, migrateReset, migrateUp, readMigrationFiles } from '../migrator';
-import { logger } from '../../utils/logger';
+import { describeError, logger } from '../../utils/logger';
 
 async function main(): Promise<void> {
   const command = process.argv[2] ?? 'up';
@@ -42,7 +42,7 @@ main()
     process.exit(0);
   })
   .catch(async (error: unknown) => {
-    logger.error('Migration failed', error instanceof Error ? error.message : error);
+    logger.error(`Migration failed: ${describeError(error)}`);
     await closePool().catch(() => undefined);
     process.exit(1);
   });
