@@ -1,10 +1,10 @@
-# Render blueprint: provisions the PostgreSQL database, the API and the static
-# frontend in one go. Import this repository at https://render.com → New → Blueprint.
-databases:
-  - name: erp-crm-db
-    databaseName: erp_crm
-    user: erp_user
-    plan: free
+# Render blueprint: provisions the API and the static frontend in one go.
+# Import this repository at https://render.com → New → Blueprint.
+#
+# The database is deliberately NOT provisioned here. Render's free PostgreSQL
+# expires after roughly 30 days, which would leave a submitted demo pointing at a
+# dead database. Instead, create a free database on Neon (or Supabase) and paste
+# its connection string into the DATABASE_URL field when deploying the blueprint.
 
 services:
   # ---- Backend API --------------------------------------------------------
@@ -21,10 +21,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Paste the connection string from Neon/Supabase. Never commit it.
       - key: DATABASE_URL
-        fromDatabase:
-          name: erp-crm-db
-          property: connectionString
+        sync: false
       - key: DATABASE_SSL
         value: "true"
       - key: DATABASE_POOL_MAX

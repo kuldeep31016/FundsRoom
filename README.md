@@ -635,14 +635,21 @@ and no localhost URL is baked into any production build.
 
 [`render.yaml`](render.yaml) provisions the database, API and static frontend together.
 
-1. Push this repository to GitHub.
-2. Render → **New → Blueprint** → select the repository.
-3. Render creates `erp-crm-db`, `erp-crm-api` and `erp-crm-web`, wiring `DATABASE_URL`
-   automatically and generating `JWT_SECRET`.
-4. Set the two values marked `sync: false`:
-   - on **erp-crm-api** → `CORS_ORIGINS` = the deployed frontend origin (e.g. `https://erp-crm-web.onrender.com`)
-   - on **erp-crm-web** → `VITE_API_BASE_URL` = the deployed API URL **plus** `/api/v1`
-5. Redeploy the frontend so Vite inlines the API URL.
+1. Create a free PostgreSQL database on [Neon](https://neon.tech) and copy its connection
+   string. The blueprint deliberately does not provision Render's own PostgreSQL — its free
+   tier expires after about 30 days, which would leave a submitted demo pointing at a dead
+   database.
+2. Push this repository to GitHub.
+3. Render → **New → Blueprint** → select the repository. It creates `erp-crm-api` and
+   `erp-crm-web`, and generates `JWT_SECRET` automatically.
+4. Fill in the values marked `sync: false`:
+   - **erp-crm-api** → `DATABASE_URL` = the Neon connection string
+   - **erp-crm-api** → `CORS_ORIGINS` = the frontend origin, e.g. `https://erp-crm-web.onrender.com`
+   - **erp-crm-api** → `SEED_DEFAULT_PASSWORD` = the demo account password
+   - **erp-crm-web** → `VITE_API_BASE_URL` = the API URL **plus** `/api/v1`
+5. Deploy, then confirm the generated service URLs match what you entered. Render appends a
+   suffix if a service name is already taken — if so, correct `CORS_ORIGINS` and
+   `VITE_API_BASE_URL` and redeploy both services.
 
 The API start command runs `migrate:prod` then `seed:prod` before booting: migrations are
 idempotent, and the seed only inserts demo data into an empty database.
