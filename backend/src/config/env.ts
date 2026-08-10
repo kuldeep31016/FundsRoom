@@ -36,6 +36,15 @@ const envSchema = z.object({
   // Password assigned to every seeded demo user. Never used outside seeding.
   SEED_DEFAULT_PASSWORD: z.string().min(8).default('Password@123'),
 
+  // Letterhead printed on generated challan PDFs.
+  COMPANY_NAME: z.string().default('Shreeji Wholesale Distributors'),
+  COMPANY_ADDRESS: z
+    .string()
+    .default('Unit 14, MIDC Industrial Estate, Pune, Maharashtra 411019'),
+  COMPANY_GSTIN: z.string().default('27AAPFU0939F1ZV'),
+  COMPANY_PHONE: z.string().default('+91 20 4567 8900'),
+  COMPANY_EMAIL: z.string().default('operations@shreejiwholesale.test'),
+
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('info'),
 });
 
