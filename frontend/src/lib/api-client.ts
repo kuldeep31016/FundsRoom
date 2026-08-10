@@ -162,12 +162,65 @@ async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<
   return { data: (successBody?.data ?? null) as T, meta: successBody?.meta };
 }
 
+/**
+ * Download a binary endpoint (currently the challan PDF) and hand it to the
+ * browser as a file.
+ *
+ * A plain anchor href cannot be used because the endpoint requires the
+ * `Authorization` header, so the response is fetched, turned into an object URL
+ * and clicked programmatically. On failure the JSON error envelope is parsed so
+ * the caller still gets a normal `ApiError`.
+ */
+async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
+  const token = tokenStorage.get();
+
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Unable to reach the server. Please try again.');
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) onUnauthorized();
+    let code = 'UNKNOWN_ERROR';
+    let message = `Download failed with status ${response.status}.`;
+    try {
+      const payload = (await response.json()) as { error?: { code?: string; message?: string } };
+      code = payload.error?.code ?? code;
+      message = payload.error?.message ?? message;
+    } catch {
+      /* the error body was not JSON — keep the generic message */
+    }
+    throw new ApiError(response.status, code, message);
+  }
+
+  // Prefer the server-provided filename from Content-Disposition.
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const match = /filename="?([^";]+)"?/i.exec(disposition);
+  const filename = match?.[1] ?? fallbackFilename;
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  // Revoking immediately can cancel the download in some browsers.
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+}
+
 export const api = {
   get: <T>(path: string, params?: QueryParams, signal?: AbortSignal) =>
     apiFetch<T>(path, { method: 'GET', params, signal }),
   post: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     apiFetch<T>(path, { ...options, method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => apiFetch<T>(path, { method: 'PATCH', body }),
+  download: downloadFile,
 };
 
 export { API_BASE_URL };
