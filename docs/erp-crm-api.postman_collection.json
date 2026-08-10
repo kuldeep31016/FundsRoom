@@ -1,0 +1,1245 @@
+{
+  "info": {
+    "name": "Mini ERP + CRM Operations Portal API",
+    "description": "Complete REST API for the Mini ERP + CRM Operations Portal.\n\n## Getting started\n1. Set the `baseUrl` collection variable (default `http://localhost:4000/api/v1`).\n2. Run **Auth → Login (Admin)**. The token is captured automatically into the `token` variable by a test script, so every other request is authenticated.\n3. Run **Customers → Create customer** and **Products → Create product** — their ids are also captured automatically into `customerId` / `productId`, which the challan requests reuse.\n\nAll authenticated requests send `Authorization: Bearer {{token}}` via collection-level auth.\n\n## Roles\nSwitch role by running a different login request. The API enforces the role matrix server-side, so the *Role-based access* folder demonstrates real 403 responses.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000/api/v1", "type": "string" },
+    { "key": "password", "value": "Password@123", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "customerId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "challanId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "description": "Public liveness probe. Also verifies the database connection. Expect 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Role permission matrix",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/meta/roles", "host": ["{{baseUrl}}"], "path": ["meta", "roles"] },
+            "description": "Returns every role with the permissions it holds. Expect 200."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.data.token);",
+                  "pm.test('returns a JWT and the permission set', () => {",
+                  "  pm.expect(body.data.token).to.be.a('string');",
+                  "  pm.expect(body.data.user.permissions).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@erpcrm.test\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Full access, including user administration. Saves the token for all later requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (Sales)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sales@erpcrm.test\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Customers, follow-ups and sales challans."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (Warehouse)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"warehouse@erpcrm.test\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Products, stock movements and challan dispatch."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (Accounts)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"accounts@erpcrm.test\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Read-only access across all modules."
+          },
+          "response": []
+        },
+        {
+          "name": "Login — invalid credentials (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+                  "pm.test('generic message (no account enumeration)', () => {",
+                  "  pm.expect(pm.response.json().error.message).to.eql('Invalid email or password.');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@erpcrm.test\",\n  \"password\": \"WrongPassword1\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login — missing fields (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] },
+            "description": "Rehydrates the session. Expect 200, or 401 if the token is missing/expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Current user — no token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] },
+            "description": "JWTs are stateless — the client discards the token. Expect 200."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "List customers (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "createdAt", "description": "createdAt | name | followUpDate | status" },
+                { "key": "sortOrder", "value": "desc", "description": "asc | desc" }
+              ]
+            },
+            "description": "Returns `{ success, data: [...], meta: { page, limit, total, totalPages, hasNext, hasPrev } }`."
+          },
+          "response": []
+        },
+        {
+          "name": "Search customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?search=Patel",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [{ "key": "search", "value": "Patel", "description": "Matches name, business name, mobile, email or GST" }]
+            },
+            "description": "Server-side search (not client-side filtering)."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter customers by status and type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?status=ACTIVE&type=WHOLESALE",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "status", "value": "ACTIVE", "description": "LEAD | ACTIVE | INACTIVE" },
+                { "key": "type", "value": "WHOLESALE", "description": "RETAIL | WHOLESALE | DISTRIBUTOR" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('customerId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ravi Menon\",\n  \"mobile\": \"9876500001\",\n  \"email\": \"ravi@menonstores.test\",\n  \"businessName\": \"Menon Stores\",\n  \"gstNumber\": \"27AAPFU0939F1ZV\",\n  \"customerType\": \"WHOLESALE\",\n  \"address\": \"12 Link Road, Mumbai\",\n  \"status\": \"ACTIVE\",\n  \"followUpDate\": \"2026-12-31\",\n  \"notes\": \"Prefers morning calls.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] },
+            "description": "Requires `customers:write` (Admin, Sales). GST number is optional. Saves the new id for later requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Create customer — minimal (no GST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Anil Kumar\",\n  \"mobile\": \"9990011223\",\n  \"customerType\": \"RETAIL\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] },
+            "description": "GST is optional; status defaults to LEAD. Expect 201."
+          },
+          "response": []
+        },
+        {
+          "name": "Create customer — invalid enum (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('names the offending field', () => {",
+                  "  pm.expect(pm.response.json().error.details[0].field).to.eql('customerType');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad Type\",\n  \"mobile\": \"9876500005\",\n  \"customerType\": \"PLATINUM\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get customer — unknown id (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/11111111-1111-1111-1111-111111111111",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "11111111-1111-1111-1111-111111111111"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get customer — malformed id (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/customers/not-a-uuid", "host": ["{{baseUrl}}"], "path": ["customers", "not-a-uuid"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update customer",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"businessName\": \"Menon Stores & Sons\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            },
+            "description": "Partial update. Send `null` to clear an optional field. `PUT` is accepted as an alias."
+          },
+          "response": []
+        },
+        {
+          "name": "List follow-ups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/follow-ups?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "follow-ups"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add follow-up note",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Called to confirm the monthly order. Wants delivery on the 5th.\",\n  \"followUpDate\": \"2026-11-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/follow-ups",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "follow-ups"]
+            },
+            "description": "Requires `customers:followup:write`. Supplying `followUpDate` also advances the customer's next follow-up date, in the same transaction."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10&sortBy=name&sortOrder=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "name", "description": "createdAt | name | sku | unitPrice | currentStock" },
+                { "key": "sortOrder", "value": "asc" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search / filter products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?search=detergent&category=Detergents",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "search", "value": "detergent", "description": "Matches name, SKU or category" },
+                { "key": "category", "value": "Detergents" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Low stock products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?lowStock=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [{ "key": "lowStock", "value": "true", "description": "current_stock <= min_stock_alert" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/products/categories", "host": ["{{baseUrl}}"], "path": ["products", "categories"] },
+            "description": "Distinct categories, used to populate the filter dropdown."
+          },
+          "response": []
+        },
+        {
+          "name": "Create product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('productId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Steel Bucket 15L\",\n  \"sku\": \"HW-BUCKET-15\",\n  \"category\": \"Hardware\",\n  \"unitPrice\": 249.50,\n  \"currentStock\": 80,\n  \"minStockAlert\": 20,\n  \"location\": \"Warehouse D - Rack 7\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "Requires `products:write` (Admin, Warehouse). Opening stock is posted as an IN movement so the ledger explains the balance."
+          },
+          "response": []
+        },
+        {
+          "name": "Create product — duplicate SKU (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('DUPLICATE_SKU', () => pm.expect(pm.response.json().error.code).to.eql('DUPLICATE_SKU'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate SKU Attempt\",\n  \"sku\": \"HW-BUCKET-15\",\n  \"category\": \"Hardware\",\n  \"unitPrice\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "Run **Create product** first. SKU uniqueness is case-insensitive."
+          },
+          "response": []
+        },
+        {
+          "name": "Create product — negative price (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Negative Price\",\n  \"sku\": \"NEG-PRICE-1\",\n  \"category\": \"Misc\",\n  \"unitPrice\": -5\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update product",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitPrice\": 275.00,\n  \"minStockAlert\": 25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "`currentStock` is deliberately NOT editable here — stock only moves through the stock movement endpoint, so the audit ledger stays complete."
+          },
+          "response": []
+        },
+        {
+          "name": "Product stock history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/stock-movements?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "stock-movements"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "List stock movements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock/movements?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["stock", "movements"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "productId", "value": "", "description": "Filter to one product", "disabled": true },
+                { "key": "movementType", "value": "OUT", "description": "IN | OUT", "disabled": true },
+                { "key": "referenceType", "value": "CHALLAN", "description": "MANUAL | CHALLAN | PRODUCT_OPENING", "disabled": true },
+                { "key": "from", "value": "2026-01-01", "disabled": true },
+                { "key": "to", "value": "2026-12-31", "disabled": true }
+              ]
+            },
+            "description": "The full append-only audit trail. Each row records type, quantity, signed change, before/after balance, reason, actor and timestamp."
+          },
+          "response": []
+        },
+        {
+          "name": "Stock IN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"IN\",\n  \"quantity\": 25,\n  \"reason\": \"Purchase order PO-1042 received\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] },
+            "description": "Requires `stock:write` (Admin, Warehouse)."
+          },
+          "response": []
+        },
+        {
+          "name": "Stock OUT",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"OUT\",\n  \"quantity\": 5,\n  \"reason\": \"Damaged in transit\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stock OUT — insufficient stock (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('INSUFFICIENT_STOCK with context', () => {",
+                  "  const err = pm.response.json().error;",
+                  "  pm.expect(err.code).to.eql('INSUFFICIENT_STOCK');",
+                  "  pm.expect(err.meta.availableStock).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"OUT\",\n  \"quantity\": 999999,\n  \"reason\": \"Over-issue attempt\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] },
+            "description": "Stock is never allowed to go negative. Nothing is written — verify with the product stock history."
+          },
+          "response": []
+        },
+        {
+          "name": "Stock movement — invalid type (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"TRANSFER\",\n  \"quantity\": 1,\n  \"reason\": \"Invalid movement type\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Stock movement — zero quantity (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"IN\",\n  \"quantity\": 0,\n  \"reason\": \"Zero quantity\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sales challans",
+      "item": [
+        {
+          "name": "List challans (paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "CONFIRMED", "description": "DRAFT | CONFIRMED | CANCELLED", "disabled": true },
+                { "key": "search", "value": "CH-2026", "description": "Challan number or customer", "disabled": true },
+                { "key": "customerId", "value": "", "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create challan — DRAFT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json().data;",
+                  "pm.collectionVariables.set('challanId', data.id);",
+                  "pm.test('challan number is auto-generated', () => {",
+                  "  pm.expect(data.challanNumber).to.match(/^CH-\\d{4}-\\d{6}$/);",
+                  "});",
+                  "pm.test('status is DRAFT (stock untouched)', () => pm.expect(data.status).to.eql('DRAFT'));",
+                  "pm.test('line stores the product snapshot', () => {",
+                  "  pm.expect(data.items[0]).to.have.property('productName');",
+                  "  pm.expect(data.items[0]).to.have.property('productSku');",
+                  "  pm.expect(data.items[0]).to.have.property('unitPrice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 5 }\n  ],\n  \"status\": \"DRAFT\",\n  \"notes\": \"Awaiting transport confirmation\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] },
+            "description": "A draft never reduces stock. The challan number is allocated atomically and each line stores a snapshot of the product."
+          },
+          "response": []
+        },
+        {
+          "name": "Create challan — multiple products, CONFIRMED",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 3 }\n  ],\n  \"status\": \"CONFIRMED\",\n  \"notes\": \"Dispatched with our own vehicle\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] },
+            "description": "Creating directly as CONFIRMED deducts stock and writes one OUT movement per line — all inside a single transaction. Add more objects to `items` to dispatch several products at once."
+          },
+          "response": []
+        },
+        {
+          "name": "Create challan — empty items (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create challan — insufficient stock (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('INSUFFICIENT_STOCK lists every short line', () => {",
+                  "  const err = pm.response.json().error;",
+                  "  pm.expect(err.code).to.eql('INSUFFICIENT_STOCK');",
+                  "  pm.expect(err.meta.shortfalls).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 999999 }\n  ],\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] },
+            "description": "The whole transaction rolls back: no challan row, no stock change, no partial deduction."
+          },
+          "response": []
+        },
+        {
+          "name": "Create challan — unknown customer (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"11111111-1111-1111-1111-111111111111\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 1 }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Get challan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            },
+            "description": "Returns the header plus all line items, including the stored product snapshot."
+          },
+          "response": []
+        },
+        {
+          "name": "Update draft challan",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 8 }\n  ],\n  \"notes\": \"Revised order\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            },
+            "description": "Only DRAFT challans can be edited. Editing a CONFIRMED or CANCELLED challan returns 409."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm challan (deducts stock)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status is CONFIRMED and stamped', () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.status).to.eql('CONFIRMED');",
+                  "  pm.expect(data.confirmedAt).to.not.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "confirm"]
+            },
+            "description": "Requires `challans:confirm` (Admin, Sales, Warehouse). Validates every line first, then deducts stock and writes one OUT movement per line, inside one transaction."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm again — already confirmed (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('INVALID_STATE_TRANSITION', () => {",
+                  "  pm.expect(pm.response.json().error.code).to.eql('INVALID_STATE_TRANSITION');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "confirm"]
+            },
+            "description": "Guards against a double-click deducting stock twice."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel challan (returns stock)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Customer cancelled the order\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "cancel"]
+            },
+            "description": "Cancelling a CONFIRMED challan returns every line to inventory with an IN movement. Cancelling a DRAFT is a status change only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & users",
+      "item": [
+        {
+          "name": "Dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/dashboard/summary", "host": ["{{baseUrl}}"], "path": ["dashboard", "summary"] },
+            "description": "Aggregated counters, low-stock watchlist, due follow-ups and recent challans in a single call."
+          },
+          "response": []
+        },
+        {
+          "name": "List users (Admin only)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Requires `users:read` (Admin). Any other role receives 403."
+          },
+          "response": []
+        },
+        {
+          "name": "Create user (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Sales User\",\n  \"email\": \"new.sales@erpcrm.test\",\n  \"password\": \"Password@123\",\n  \"role\": \"SALES\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Role-based access (403 proofs)",
+      "description": "Authorization is enforced by the server, not just hidden in the UI. Run **Auth → Login (Accounts)** first, then each request below to see a real 403.",
+      "item": [
+        {
+          "name": "1. Login as Accounts (read-only role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"accounts@erpcrm.test\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Accounts reads customers (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 OK — read access is allowed', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Accounts creates a customer (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN', () => pm.expect(pm.response.json().error.code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Be Rejected\",\n  \"mobile\": \"9999999999\",\n  \"customerType\": \"RETAIL\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Accounts creates a product (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Be Rejected\",\n  \"sku\": \"RBAC-DENY-1\",\n  \"category\": \"Misc\",\n  \"unitPrice\": 10\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          },
+          "response": []
+        },
+        {
+          "name": "5. Accounts posts a stock movement (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"movementType\": \"IN\",\n  \"quantity\": 1,\n  \"reason\": \"Should be rejected\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/stock/movements", "host": ["{{baseUrl}}"], "path": ["stock", "movements"] }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Accounts lists users (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 Forbidden', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
