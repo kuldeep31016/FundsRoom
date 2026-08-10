@@ -2,9 +2,18 @@ import { withTransaction } from '../../db/pool';
 import { ApiError, ERROR_CODES } from '../../utils/api-error';
 import type { ProductRecord, StockMovementRecord } from '../../types/domain';
 import { applyStockMovement, STOCK_REFERENCE } from '../stock/stock.service';
+import {
+  ALLOWED_IMAGE_TYPES,
+  createPresignedUpload,
+  deleteObject,
+  headObject,
+  type AllowedImageType,
+  type PresignedUpload,
+} from '../storage/storage.service';
 import { listStockMovements } from '../stock/stock.repository';
 import * as repository from './product.repository';
 import type { CreateProductInput, ProductListQuery, UpdateProductInput } from './product.schema';
+import { env } from '../../config/env';
 
 export async function list(
   params: ProductListQuery,
@@ -121,4 +130,97 @@ export async function getStockHistory(
     from: undefined,
     to: undefined,
   });
+}
+
+/** Step 1 of an image upload: hand the browser a short-lived presigned PUT URL. */
+export async function createImageUploadUrl(
+  productId: string,
+  contentType: AllowedImageType,
+  contentLength: number,
+): Promise<PresignedUpload> {
+  await getById(productId);
+
+  if (contentLength > env.S3_MAX_UPLOAD_BYTES) {
+    throw ApiError.badRequest(
+      `Image is too large. Maximum size is ${Math.floor(env.S3_MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`,
+      [{ field: 'contentLength', message: 'File exceeds the maximum upload size' }],
+    );
+  }
+
+  return createPresignedUpload(productId, contentType, contentLength);
+}
+
+/**
+ * Step 2: attach an uploaded object to the product.
+ *
+ * The object is verified to exist and to belong to this product's key prefix, so
+ * a client cannot point a product at an arbitrary object in the bucket. A
+ * replaced image has its predecessor deleted so the bucket does not accumulate
+ * orphans.
+ */
+export async function attachImage(productId: string, key: string): Promise<ProductRecord> {
+  await getById(productId);
+
+  if (!key.startsWith(`products/${productId}/`)) {
+    throw ApiError.badRequest('That upload key does not belong to this product.', [
+      { field: 'key', message: 'Key does not match this product' },
+    ]);
+  }
+
+  const stored = await headObject(key);
+  if (!stored) {
+    throw new ApiError(
+      404,
+      ERROR_CODES.UPLOAD_NOT_FOUND,
+      'The uploaded file was not found in storage. Please upload the image again.',
+    );
+  }
+
+  // Re-validate what was actually stored rather than trusting the request that
+  // asked for the upload URL. The offending object is removed so a rejected
+  // upload cannot linger in the bucket.
+  if (!ALLOWED_IMAGE_TYPES.includes(stored.contentType as AllowedImageType)) {
+    await deleteObject(key);
+    throw ApiError.badRequest(
+      `Uploaded file is a ${stored.contentType}, which is not an allowed image type.`,
+      [{ field: 'key', message: `Allowed types: ${ALLOWED_IMAGE_TYPES.join(', ')}` }],
+    );
+  }
+
+  if (stored.contentLength > env.S3_MAX_UPLOAD_BYTES) {
+    await deleteObject(key);
+    throw ApiError.badRequest(
+      `Uploaded file is too large. Maximum size is ${Math.floor(env.S3_MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`,
+      [{ field: 'key', message: 'File exceeds the maximum upload size' }],
+    );
+  }
+
+  const { product, previousKey } = await repository.setProductImage(productId, {
+    key,
+    mimeType: stored.contentType,
+    size: stored.contentLength,
+  });
+  if (!product) {
+    throw ApiError.notFound('Product');
+  }
+
+  if (previousKey && previousKey !== key) {
+    await deleteObject(previousKey);
+  }
+
+  return product;
+}
+
+/** Remove the product image and delete the underlying object. */
+export async function removeImage(productId: string): Promise<ProductRecord> {
+  await getById(productId);
+
+  const { product, previousKey } = await repository.setProductImage(productId, null);
+  if (!product) {
+    throw ApiError.notFound('Product');
+  }
+  if (previousKey) {
+    await deleteObject(previousKey);
+  }
+  return product;
 }

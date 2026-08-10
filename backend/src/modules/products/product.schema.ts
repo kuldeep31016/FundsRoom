@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ALLOWED_IMAGE_TYPES } from '../storage/storage.service';
 import {
   moneySchema,
   nonNegativeIntSchema,
@@ -65,3 +66,30 @@ export const productIdParamSchema = z.object({ id: uuidParam('Product id') });
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
+
+const imageContentTypeSchema = z.enum(ALLOWED_IMAGE_TYPES, {
+  errorMap: () => ({
+    message: `Image must be one of: ${ALLOWED_IMAGE_TYPES.join(', ')}`,
+  }),
+});
+
+/** Requests a presigned upload URL; the browser then PUTs the file to S3. */
+export const productImageUploadUrlSchema = z
+  .object({
+    contentType: imageContentTypeSchema,
+    contentLength: z
+      .number({ required_error: 'File size is required' })
+      .int('File size must be a whole number of bytes')
+      .positive('File size must be greater than zero'),
+  })
+  .strict();
+
+/** Confirms an upload and attaches the stored object to the product. */
+export const attachProductImageSchema = z
+  .object({
+    key: requiredString('Upload key', 300),
+  })
+  .strict();
+
+export type ProductImageUploadUrlInput = z.infer<typeof productImageUploadUrlSchema>;
+export type AttachProductImageInput = z.infer<typeof attachProductImageSchema>;
