@@ -35,6 +35,7 @@ export function ChallanDetailPage() {
   const [action, setAction] = useState<'confirm' | 'cancel' | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [shortfalls, setShortfalls] = useState<
     Array<{ productName: string; sku: string; requestedQuantity: number; availableStock: number }>
@@ -51,6 +52,21 @@ export function ChallanDetailPage() {
   );
 
   const relatedMovements = (movements ?? []).filter((movement) => movement.referenceId === id);
+
+  async function downloadPdf() {
+    setIsDownloading(true);
+    try {
+      await api.download(`/challans/${id}/pdf`, `${challan?.challanNumber ?? 'challan'}.pdf`);
+      toast.success('Challan downloaded', `${challan?.challanNumber} saved as a PDF.`);
+    } catch (err) {
+      toast.error(
+        'Download failed',
+        err instanceof ApiError ? err.message : 'Could not generate the PDF. Please try again.',
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  }
 
   async function runAction(kind: 'confirm' | 'cancel') {
     setActionError(null);
@@ -161,6 +177,9 @@ export function ChallanDetailPage() {
         }
         actions={
           <>
+            <Button variant="secondary" onClick={downloadPdf} isLoading={isDownloading}>
+              {isDownloading ? 'Preparing…' : '↓ Download PDF'}
+            </Button>
             {isDraft && can('challans:cancel') ? (
               <Button
                 variant="secondary"
