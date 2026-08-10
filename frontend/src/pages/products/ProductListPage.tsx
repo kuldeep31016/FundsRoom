@@ -171,16 +171,27 @@ export function ProductListPage() {
                   {data.map((product) => (
                     <tr key={product.id}>
                       <td>
-                        <div className="table__primary">
-                          <Link to={`/products/${product.id}`}>{product.name}</Link>
-                          {!product.isActive ? (
-                            <>
-                              {' '}
-                              <Badge variant="neutral">Inactive</Badge>
-                            </>
-                          ) : null}
+                        <div className="product-cell">
+                          {product.imageUrl ? (
+                            <img className="product-thumb" src={product.imageUrl} alt="" />
+                          ) : (
+                            <div className="product-thumb product-thumb--empty" aria-hidden="true">
+                              ▣
+                            </div>
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <div className="table__primary">
+                              <Link to={`/products/${product.id}`}>{product.name}</Link>
+                              {!product.isActive ? (
+                                <>
+                                  {' '}
+                                  <Badge variant="neutral">Inactive</Badge>
+                                </>
+                              ) : null}
+                            </div>
+                            <div className="table__secondary mono">{product.sku}</div>
+                          </div>
                         </div>
-                        <div className="table__secondary mono">{product.sku}</div>
                       </td>
                       <td>{product.category}</td>
                       <td className="text-muted">{product.location ?? '—'}</td>

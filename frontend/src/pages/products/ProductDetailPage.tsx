@@ -30,6 +30,7 @@ import {
   TextField,
 } from '../../components/ui';
 import { MOVEMENT_TYPES, type Product, type StockMovement } from '../../types/api';
+import { ProductImageUploader } from '../../components/ui/ProductImageUploader';
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -157,6 +158,35 @@ export function ProductDetailPage() {
           <Stat label="Unit price" value={formatCurrency(product.unitPrice)} />
           <Stat label="Stock value" value={formatCurrency(product.stockValue)} />
         </div>
+
+        <Card>
+          <CardHeader
+            title="Product photo"
+            subtitle="Shown on the product list. Stored in S3-compatible object storage."
+          />
+          <CardBody>
+            {can('products:write') ? (
+              <ProductImageUploader product={product} onChange={() => refetchProduct()} />
+            ) : (
+              <div className="image-uploader">
+                <div className="image-uploader__preview">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={`${product.name} product photo`} />
+                  ) : (
+                    <div className="image-uploader__placeholder" aria-hidden="true">
+                      ▣
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted">
+                  {product.imageUrl
+                    ? 'Only warehouse and admin users can change this image.'
+                    : 'No photo has been uploaded for this product.'}
+                </p>
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
         <Card>
           <CardHeader title="Product details" />
