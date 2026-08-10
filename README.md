@@ -74,6 +74,9 @@ The operational flow the system models:
 - Product snapshots so historical documents never change when the catalogue does
 - Transactional confirmation: stock validation, deduction, movement logging and status change
   all succeed together or not at all
+- **PDF export** — a printable A4 delivery challan rendered from the stored snapshot, with a
+  company letterhead, status watermark for draft/cancelled documents, pagination and signature
+  blocks
 
 **Dashboard**
 - Aggregated counters, inventory valuation, low-stock watchlist, due follow-ups, recent challans
@@ -95,6 +98,7 @@ The operational flow the system models:
 | DB access | `pg` with hand-written SQL | Transactions, `SELECT … FOR UPDATE` and constraints are visible rather than hidden behind an ORM |
 | Validation | Zod | One schema per endpoint, coerced and typed |
 | Auth | `jsonwebtoken` + `bcryptjs` | Stateless JWT; pure-JS bcrypt avoids native build issues on free hosts |
+| PDF | `pdfkit` | Server-side challan rendering with no headless browser to host |
 | Frontend | React 18 + Vite | Assignment requirement; fast builds |
 | Routing | React Router 6 | Standard SPA routing |
 | Styling | Hand-written CSS with design tokens | No UI framework needed for this surface area; keeps the bundle small |
@@ -404,6 +408,7 @@ captured automatically for the remaining requests.
 | `PATCH`/`PUT` | `/challans/:id` | `challans:write` | Edit (DRAFT only) |
 | `POST` | `/challans/:id/confirm` | `challans:confirm` | Confirm and deduct stock |
 | `POST` | `/challans/:id/cancel` | `challans:cancel` | Cancel, returning stock if confirmed |
+| `GET` | `/challans/:id/pdf` | `challans:read` | Download the challan as a printable PDF |
 | `GET` | `/dashboard/summary` | `dashboard:read` | Aggregated dashboard payload |
 | `GET` | `/users` | `users:read` | List portal accounts |
 | `POST` | `/users` | `users:write` | Create a portal account |
@@ -454,6 +459,11 @@ No secret is committed. `.env` is git-ignored; `.env.example` documents every va
 | `RATE_LIMIT_MAX` | no | `300` | Requests per window |
 | `AUTH_RATE_LIMIT_MAX` | no | `20` | Stricter budget for `POST /auth/login` |
 | `SEED_DEFAULT_PASSWORD` | no | `Password@123` | Password given to seeded demo users |
+| `COMPANY_NAME` | no | `Shreeji Wholesale Distributors` | Letterhead name on generated challan PDFs |
+| `COMPANY_ADDRESS` | no | *(sample address)* | Letterhead address |
+| `COMPANY_GSTIN` | no | *(sample GSTIN)* | Letterhead GSTIN |
+| `COMPANY_PHONE` | no | *(sample number)* | Letterhead phone |
+| `COMPANY_EMAIL` | no | *(sample address)* | Letterhead email |
 
 The application validates this configuration with Zod at boot and refuses to start on a missing or
 invalid value, rather than failing confusingly later. Nothing outside `src/config/env.ts` reads
@@ -544,7 +554,7 @@ cd frontend && npm run build && npm run preview   # static build in dist/
 
 ## Testing
 
-**219 integration tests across 7 files**, run against a real PostgreSQL database so constraints,
+**229 integration tests across 8 files**, run against a real PostgreSQL database so constraints,
 transactions and row locks are genuinely exercised.
 
 ```bash
@@ -564,6 +574,7 @@ development data.
 | `tests/stock.test.ts` | 16 | IN/OUT movements, complete audit fields, stock to exactly zero, insufficient stock with no write, invalid quantities and types, filters, ledger-sums-to-balance invariant |
 | `tests/challans.test.ts` | 38 | Draft/confirmed creation, auto-numbering (incl. under concurrency), multi-product totals, duplicate-line merging, all six business rules, snapshot immutability after the product changes, confirm/cancel/edit transitions, concurrent confirmation safety |
 | `tests/rbac.test.ts` | 75 | Every role against every module: reads, writes, confirm, cancel, user admin, unauthenticated access, and 401-vs-403 correctness |
+| `tests/challan-pdf.test.ts` | 10 | Valid PDF structure and EOF marker, filename and cache headers, accurate Content-Length, rendering in all three statuses, multi-page pagination, per-role access and JSON (not PDF) errors |
 | `tests/error-handling.test.ts` | 15 | Database error translation, 500s that leak no internals, dashboard aggregation, database-level integrity invariants |
 
 Highlights worth reviewing:
@@ -582,7 +593,8 @@ Highlights worth reviewing:
 The frontend has no automated test suite (see [Known limitations](#known-limitations)). It was
 verified manually in a browser across all four roles: login and error states, the complete
 draft → confirm → stock-deduction flow, insufficient-stock handling, role-dependent UI, mobile
-layout at 375 px with no horizontal overflow, and a clean browser console.
+layout at 375 px with no horizontal overflow, PDF download producing a real `application/pdf`
+blob with the correct filename, and a clean browser console.
 
 ### Continuous integration
 
@@ -758,9 +770,9 @@ Stated plainly rather than hidden:
 10. **Rate limiting is in-process.** With multiple instances each holds its own counter; a shared
     Redis store would be needed for a strict global limit.
 11. **No file uploads.** Product images (an optional bonus requiring AWS S3) are not implemented.
-12. **No PDF export.** Listed as an optional bonus; not implemented, and no partial implementation
-    was left behind.
-13. **Single currency and locale.** INR and `en-GB` formatting are hard-coded in the formatter.
+12. **Single currency and locale.** INR and `en-GB` formatting are hard-coded in the formatter.
+    PDF documents print `Rs.` rather than the rupee glyph, because PDFKit's built-in fonts have no
+    code point for it; embedding a Unicode font would fix this.
 
 ---
 
@@ -782,9 +794,13 @@ Stated plainly rather than hidden:
 
 Only after every mandatory requirement was complete:
 
+- **PDF export** — `GET /challans/:id/pdf` renders a printable A4 delivery challan with the
+  company letterhead, a diagonal watermark on draft/cancelled documents, automatic pagination for
+  long challans, totals and signature blocks. Built from the line-item snapshot, so a reprinted
+  challan always matches the original. Covered by 10 tests.
 - **Docker** — multi-stage, non-root images for both apps plus a Compose stack (`--profile app`)
 - **GitHub Actions CI** — typecheck, build, migrate, full test suite against a live PostgreSQL
   service container, and a committed-secrets check
 
-Not implemented: PDF invoice export, S3 product image upload (both optional; no AWS account, and a
-half-built feature would be worse than none).
+Not implemented: S3 product image upload. It requires an AWS account and live credentials, and a
+version that cannot be run or tested would be worse than leaving it out.
