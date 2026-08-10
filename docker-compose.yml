@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Local development stack.
 # `docker compose up -d db` is enough to develop — the API and web apps can then be
 # run natively with `npm run dev`. `docker compose --profile app up -d` runs everything.
