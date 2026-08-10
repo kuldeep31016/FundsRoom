@@ -44,6 +44,11 @@
       "key": "challanId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "imageKey",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1094,6 +1099,128 @@
                 }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Request an image upload URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.collectionVariables.set('imageKey', d.key);",
+                  "pm.test('returns a signed URL', () => pm.expect(d.uploadUrl).to.include('X-Amz-Signature'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentType\": \"image/png\",\n  \"contentLength\": 24576\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/image/upload-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "image",
+                "upload-url"
+              ]
+            },
+            "description": "Step 1 of a direct-to-S3 upload. Returns a presigned PUT URL, the object key and the headers the upload must send. The signature covers Content-Type, so uploading a different type is rejected by storage with 403.\n\nReturns **503 STORAGE_NOT_CONFIGURED** when no bucket is configured."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload the file to storage (step 2)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/png"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            },
+            "url": {
+              "raw": "{{uploadUrl}}",
+              "host": [
+                "{{uploadUrl}}"
+              ]
+            },
+            "description": "Send the raw file straight to object storage using the `uploadUrl` from step 1 \u2014 this request does NOT go to the API and must carry no Authorization header.\n\nIn Postman: set the body to `binary`, choose a PNG, and paste the uploadUrl into the address bar. The Content-Type must match exactly what was signed."
+          },
+          "response": []
+        },
+        {
+          "name": "Attach the uploaded image (step 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"{{imageKey}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "image"
+              ]
+            },
+            "description": "Confirms the upload and records it against the product. The API verifies the object exists, that the key belongs to this product, and re-checks the stored type and size \u2014 a rejected object is deleted from the bucket. A replaced image has its predecessor removed."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove the product image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}",
+                "image"
+              ]
+            },
+            "description": "Clears every image column and deletes the object from storage."
           },
           "response": []
         }
