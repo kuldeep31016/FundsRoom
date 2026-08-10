@@ -4,7 +4,8 @@ import type { ProductListQuery } from './product.schema';
 
 const PRODUCT_COLUMNS = `
   p.id, p.name, p.sku, p.category, p.unit_price, p.current_stock, p.min_stock_alert,
-  p.location, p.is_active, p.created_by, p.created_at, p.updated_at
+  p.location, p.is_active, p.image_key, p.image_mime_type, p.image_size,
+  p.image_updated_at, p.created_by, p.created_at, p.updated_at
 `;
 
 const SORTABLE_COLUMNS: Record<string, string> = {
@@ -109,7 +110,8 @@ export async function insertProduct(
        (name, sku, category, unit_price, current_stock, min_stock_alert, location, created_by)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id, name, sku, category, unit_price, current_stock, min_stock_alert,
-               location, is_active, created_by, created_at, updated_at`,
+               location, is_active, image_key, image_mime_type, image_size,
+               image_updated_at, created_by, created_at, updated_at`,
     [
       data.name,
       data.sku,
@@ -162,7 +164,8 @@ export async function updateProduct(
     `UPDATE products SET ${assignments.join(', ')}
       WHERE id = $${values.length}
       RETURNING id, name, sku, category, unit_price, current_stock, min_stock_alert,
-                location, is_active, created_by, created_at, updated_at`,
+                location, is_active, image_key, image_mime_type, image_size,
+                image_updated_at, created_by, created_at, updated_at`,
     values,
   );
   return rows[0] ?? null;
@@ -181,11 +184,37 @@ export async function lockProductForUpdate(
 ): Promise<ProductRecord | null> {
   const { rows } = await db.query<ProductRecord>(
     `SELECT id, name, sku, category, unit_price, current_stock, min_stock_alert,
-            location, is_active, created_by, created_at, updated_at
+            location, is_active, image_key, image_mime_type, image_size,
+            image_updated_at, created_by, created_at, updated_at
        FROM products
       WHERE id = $1
       FOR UPDATE`,
     [productId],
   );
   return rows[0] ?? null;
+}
+
+/** Record an uploaded image against a product, returning the previous key. */
+export async function setProductImage(
+  id: string,
+  image: { key: string; mimeType: string; size: number } | null,
+): Promise<{ product: ProductRecord | null; previousKey: string | null }> {
+  const { rows: existing } = await query<{ image_key: string | null }>(
+    'SELECT image_key FROM products WHERE id = $1',
+    [id],
+  );
+  const previousKey = existing[0]?.image_key ?? null;
+
+  const { rows } = await query<ProductRecord>(
+    `UPDATE products
+        SET image_key = $2, image_mime_type = $3, image_size = $4,
+            image_updated_at = CASE WHEN $2::text IS NULL THEN NULL ELSE now() END
+      WHERE id = $1
+      RETURNING id, name, sku, category, unit_price, current_stock, min_stock_alert,
+                location, is_active, image_key, image_mime_type, image_size,
+                image_updated_at, created_by, created_at, updated_at`,
+    [id, image?.key ?? null, image?.mimeType ?? null, image?.size ?? null],
+  );
+
+  return { product: rows[0] ?? null, previousKey };
 }

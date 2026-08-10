@@ -72,6 +72,10 @@ export interface ProductRecord {
   min_stock_alert: number;
   location: string | null;
   is_active: boolean;
+  image_key: string | null;
+  image_mime_type: string | null;
+  image_size: number | null;
+  image_updated_at: Date | null;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;

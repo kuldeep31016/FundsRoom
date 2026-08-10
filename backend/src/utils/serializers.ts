@@ -62,6 +62,12 @@ export function serializeProduct(row: ProductRecord) {
     minStockAlert: row.min_stock_alert,
     location: row.location,
     isActive: row.is_active,
+    imageKey: row.image_key,
+    imageMimeType: row.image_mime_type,
+    imageSize: row.image_size,
+    imageUpdatedAt: isoDate(row.image_updated_at),
+    // Populated by `withImageUrls`; null when storage is not configured.
+    imageUrl: null as string | null,
     // Derived flag so every consumer applies the same low-stock rule.
     isLowStock: row.current_stock <= row.min_stock_alert,
     stockValue: Number((row.current_stock * row.unit_price).toFixed(2)),
