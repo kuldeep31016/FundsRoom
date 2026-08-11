@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticate, requirePermission } from '../../middleware/auth.middleware';
-import { validateBody, validateQuery } from '../../middleware/validate.middleware';
+import { authenticate, requirePermission, requireUser } from '../../middleware/auth.middleware';
+import { validateBody, validateParams, validateQuery } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/async-handler';
-import { sendCreated, sendPaginated } from '../../utils/http';
+import { sendCreated, sendOk, sendPaginated } from '../../utils/http';
 import { query } from '../../db/pool';
 import { ROLES } from '../../config/permissions';
-import { emailSchema, paginationQuerySchema, requiredString } from '../../validation/common';
+import {
+  emailSchema,
+  paginationQuerySchema,
+  requiredString,
+  uuidParam,
+} from '../../validation/common';
 import { hashPassword, toPublicUser } from '../auth/auth.service';
 import type { UserRecord } from '../../types/domain';
 import { ApiError, ERROR_CODES } from '../../utils/api-error';
@@ -26,6 +31,21 @@ const createUserSchema = z
     }),
   })
   .strict();
+
+const userIdParamSchema = z.object({ id: uuidParam('User id') });
+
+/** Administrators approve, suspend or re-assign an account. */
+const updateUserSchema = z
+  .object({
+    isActive: z.boolean().optional(),
+    role: z
+      .enum(ROLES, { errorMap: () => ({ message: `Role must be one of: ${ROLES.join(', ')}` }) })
+      .optional(),
+  })
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided',
+  });
 
 const listQuerySchema = paginationQuerySchema
   .extend({
@@ -93,6 +113,55 @@ router.post(
       [input.name, input.email, passwordHash, input.role],
     );
     sendCreated(res, toPublicUser(rows[0] as UserRecord));
+  }),
+);
+
+/**
+ * PATCH /users/:id — approve a registration, suspend an account, or change a role.
+ *
+ * An administrator cannot deactivate or demote their own account: doing so would
+ * immediately revoke the session performing the change, and if they were the last
+ * administrator it would lock the organisation out of user management entirely.
+ */
+router.patch(
+  '/:id',
+  requirePermission('users:write'),
+  validateParams(userIdParamSchema),
+  validateBody(updateUserSchema),
+  asyncHandler(async (req, res) => {
+    const actor = requireUser(req);
+    const targetId = req.params.id as string;
+    const input = req.body as z.infer<typeof updateUserSchema>;
+
+    if (targetId === actor.id && (input.isActive === false || (input.role && input.role !== actor.role))) {
+      throw ApiError.conflict(
+        'You cannot deactivate or change the role of your own account.',
+      );
+    }
+
+    const assignments: string[] = [];
+    const values: unknown[] = [];
+    if (input.isActive !== undefined) {
+      values.push(input.isActive);
+      assignments.push(`is_active = $${values.length}`);
+    }
+    if (input.role !== undefined) {
+      values.push(input.role);
+      assignments.push(`role = $${values.length}::user_role`);
+    }
+    values.push(targetId);
+
+    const { rows } = await query<UserRecord>(
+      `UPDATE users SET ${assignments.join(', ')}
+        WHERE id = $${values.length}
+        RETURNING id, name, email, password_hash, role, is_active, created_at, updated_at`,
+      values,
+    );
+
+    if (!rows[0]) {
+      throw ApiError.notFound('User');
+    }
+    sendOk(res, toPublicUser(rows[0]));
   }),
 );
 
