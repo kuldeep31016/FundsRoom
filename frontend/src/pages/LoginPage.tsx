@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError } from '../lib/api-client';
@@ -235,6 +235,10 @@ export function LoginPage() {
 
           <p className="login-hint">
             Demo accounts share the password <code>{DEMO_PASSWORD}</code>
+          </p>
+
+          <p className="login-hint">
+            Need your own account? <Link to="/register">Request access</Link>
           </p>
         </div>
       </main>

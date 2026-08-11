@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { EmptyState } from './components/ui';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CustomerListPage } from './pages/customers/CustomerListPage';
 import { CustomerFormPage } from './pages/customers/CustomerFormPage';
@@ -25,6 +26,7 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
             {/* Everything below requires a valid session. Each route additionally
                 declares the permission it needs; the API enforces the same rules. */}
