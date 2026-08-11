@@ -47,13 +47,6 @@ export const IconTruck = (props: IconProps) => (
   </svg>
 );
 
-export const IconShield = (props: IconProps) => (
-  <svg {...base(props)}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-);
-
 export const IconCrown = (props: IconProps) => (
   <svg {...base(props)}>
     <path d="m3 7 4.5 3.5L12 4l4.5 6.5L21 7l-1.8 11H4.8z" />
@@ -95,27 +88,8 @@ export const IconEyeOff = (props: IconProps) => (
   </svg>
 );
 
-export const IconBolt = (props: IconProps) => (
-  <svg {...base(props)}>
-    <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
-  </svg>
-);
-
-export const IconChart = (props: IconProps) => (
-  <svg {...base(props)}>
-    <path d="M3 3v18h18" />
-    <path d="M7 15l4-5 3 3 5-7" />
-  </svg>
-);
-
 export const IconCheck = (props: IconProps) => (
   <svg {...base({ strokeWidth: 3, ...props })}>
     <path d="m5 13 4 4L19 7" />
-  </svg>
-);
-
-export const IconSpark = (props: IconProps) => (
-  <svg {...base(props)}>
-    <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
   </svg>
 );

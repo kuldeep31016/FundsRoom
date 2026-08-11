@@ -1,13 +1,4 @@
-import {
-  IconBolt,
-  IconBox,
-  IconChart,
-  IconReport,
-  IconShield,
-  IconSpark,
-  IconTruck,
-  IconUsers,
-} from '../ui/icons';
+import { IconBox, IconReport, IconTruck, IconUsers } from '../ui/icons';
 
 /**
  * The left-hand identity and value panel shared by sign-in and registration.
@@ -17,43 +8,16 @@ import {
  */
 
 const FEATURES = [
-  {
-    Icon: IconUsers,
-    tint: 'tint-violet',
-    title: 'Customer CRM',
-    text: 'Manage leads, customers and follow-ups',
-  },
-  {
-    Icon: IconBox,
-    tint: 'tint-blue',
-    title: 'Inventory Management',
-    text: 'Real-time stock tracking, alerts and valuation',
-  },
-  {
-    Icon: IconTruck,
-    tint: 'tint-green',
-    title: 'Sales & Dispatch',
-    text: 'Create challans, dispatch orders, track everything',
-  },
-  {
-    Icon: IconReport,
-    tint: 'tint-amber',
-    title: 'Accounts & Reports',
-    text: 'Financial reports, stock reports and insights',
-  },
-];
-
-const STATS = [
-  { Icon: IconUsers, value: '4', label: 'User Roles' },
-  { Icon: IconShield, value: '100%', label: 'Secure' },
-  { Icon: IconBolt, value: 'Real-time', label: 'Updates' },
-  { Icon: IconChart, value: 'Audited', label: 'Inventory' },
+  { Icon: IconUsers, title: 'Customer CRM', text: 'Leads, customers and follow-ups' },
+  { Icon: IconBox, title: 'Inventory', text: 'Real-time stock and alerts' },
+  { Icon: IconTruck, title: 'Sales & Dispatch', text: 'Challans and dispatch tracking' },
+  { Icon: IconReport, title: 'Accounts & Reports', text: 'Financial and stock reports' },
 ];
 
 export function AuthBrandPanel({
   headline = 'Run your entire business with',
   highlight = 'one connected system',
-  lede = 'Manage customers, inventory, sales, warehouse and finance operations from a single, unified platform.',
+  lede = 'Manage customers, inventory, sales, warehouse and finance from a single platform.',
 }: {
   headline?: string;
   highlight?: string;
@@ -61,27 +25,6 @@ export function AuthBrandPanel({
 } = {}) {
   return (
     <section className="auth-brand">
-      {/* Decorative city skyline, anchored to the bottom-left corner. */}
-      <svg className="auth-skyline" viewBox="0 0 340 140" fill="currentColor" aria-hidden="true">
-        <rect x="0" y="70" width="28" height="70" />
-        <rect x="32" y="40" width="24" height="100" />
-        <rect x="60" y="88" width="20" height="52" />
-        <rect x="84" y="20" width="30" height="120" />
-        <rect x="118" y="60" width="22" height="80" />
-        <rect x="144" y="50" width="26" height="90" />
-        <rect x="174" y="94" width="18" height="46" />
-        <rect x="196" y="30" width="28" height="110" />
-        <rect x="228" y="66" width="20" height="74" />
-        <rect x="252" y="46" width="24" height="94" />
-        <rect x="280" y="82" width="20" height="58" />
-        <rect x="304" y="18" width="30" height="122" />
-      </svg>
-
-      {/* Small round badge floating over the gradient. */}
-      <span className="auth-orb" aria-hidden="true">
-        <IconSpark width={20} height={20} />
-      </span>
-
       <header className="auth-brand__head">
         <span className="auth-brand__mark">
           <IconBox width={22} height={22} />
@@ -101,28 +44,14 @@ export function AuthBrandPanel({
       <p className="auth-brand__lede">{lede}</p>
 
       <div className="auth-features">
-        {FEATURES.map(({ Icon, tint, title, text }) => (
+        {FEATURES.map(({ Icon, title, text }) => (
           <div className="auth-feature" key={title}>
-            <span className={`auth-feature__icon ${tint}`}>
-              <Icon width={20} height={20} />
+            <span className="auth-feature__icon">
+              <Icon width={19} height={19} />
             </span>
             <div>
               <div className="auth-feature__title">{title}</div>
               <div className="auth-feature__text">{text}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="auth-stats">
-        {STATS.map(({ Icon, value, label }) => (
-          <div className="auth-stat" key={label}>
-            <span className="auth-stat__icon">
-              <Icon width={17} height={17} />
-            </span>
-            <div>
-              <div className="auth-stat__value">{value}</div>
-              <div className="auth-stat__label">{label}</div>
             </div>
           </div>
         ))}

@@ -864,24 +864,27 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: var(--shadow-md);
   animation: slide-in 0.18s ease;
 }
 
 .toast--success {
-  border-left-color: var(--color-success-fg);
+  background: #1e8449;
+  color: #fff;
 }
 
 .toast--error {
-  border-left-color: var(--color-danger-500);
+  background: var(--color-danger-600);
+  color: #fff;
 }
 
 .toast--info {
-  border-left-color: var(--color-primary-500);
+  background: var(--color-primary-600);
+  color: #fff;
 }
 
 .toast__content {
@@ -894,10 +897,25 @@
   font-weight: 620;
 }
 
+.toast--success .toast__message,
+.toast--error .toast__message,
+.toast--info .toast__message {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .toast__message {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   word-break: break-word;
+}
+
+.toast .btn--ghost {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.toast .btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 @keyframes slide-in {
@@ -1020,24 +1038,25 @@
 }
 
 /* === Auth screens (sign in / register) ===================================
-   Violet gradient field, floating white card, decorative skyline silhouette
-   and a small round badge in the corner.
+   Dark navy brand panel, blue accent, floating white card on the right.
    ------------------------------------------------------------------------- */
 
 .auth {
-  --auth-violet: #6d5cf6;
-  --auth-indigo: #4f46e5;
+  --auth-blue: #3b6fe0;
+  --auth-blue-deep: #2148a6;
   --auth-ink: #1e1b39;
   --auth-muted: #6b6b8d;
+  --auth-brand-ink: #fff;
+  --auth-brand-muted: rgba(255, 255, 255, 0.72);
 
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background: linear-gradient(150deg, #f5f3ff 0%, #eef2ff 45%, #f7f5ff 100%);
+  background: radial-gradient(120% 120% at 12% 8%, #22345c 0%, #131f36 45%, #0b1322 100%);
   isolation: isolate;
 }
 
-/* Two soft colour fields in the corners, echoing the brand gradient. */
+/* Two soft colour fields drifting behind the brand panel. */
 .auth::before,
 .auth::after {
   content: '';
@@ -1045,22 +1064,23 @@
   z-index: -1;
   border-radius: 50%;
   filter: blur(90px);
+  opacity: 0.5;
 }
 
 .auth::before {
-  width: 620px;
-  height: 620px;
-  top: -280px;
-  right: -180px;
-  background: rgba(124, 106, 247, 0.38);
+  width: 460px;
+  height: 460px;
+  top: -140px;
+  right: -120px;
+  background: var(--auth-blue);
 }
 
 .auth::after {
-  width: 520px;
-  height: 520px;
-  bottom: -260px;
-  left: -160px;
-  background: rgba(99, 102, 241, 0.26);
+  width: 380px;
+  height: 380px;
+  bottom: -130px;
+  left: -90px;
+  background: var(--auth-blue-deep);
 }
 
 .auth__inner {
@@ -1094,26 +1114,26 @@
   width: 46px;
   height: 46px;
   border-radius: 13px;
-  background: linear-gradient(135deg, var(--auth-violet), var(--auth-indigo));
+  background: linear-gradient(135deg, var(--auth-blue), var(--auth-blue-deep));
   color: #fff;
-  box-shadow: 0 8px 20px rgba(109, 92, 246, 0.32);
+  box-shadow: 0 8px 20px rgba(59, 111, 224, 0.4);
 }
 
 .auth-brand__name {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--auth-ink);
+  color: var(--auth-brand-ink);
 }
 
 .auth-brand__name em {
   font-style: normal;
-  color: var(--auth-violet);
+  color: #8fb1f5;
 }
 
 .auth-brand__tagline {
   font-size: var(--text-sm);
-  color: var(--auth-muted);
+  color: var(--auth-brand-muted);
 }
 
 .auth-brand__headline {
@@ -1121,40 +1141,13 @@
   font-weight: 700;
   line-height: 1.14;
   letter-spacing: -0.035em;
-  color: var(--auth-ink);
+  color: var(--auth-brand-ink);
   max-width: 13ch;
 }
 
-/* The closing phrase carries the brand gradient. */
+/* The closing phrase carries the blue accent. */
 .auth-brand__headline span {
-  background: linear-gradient(96deg, var(--auth-violet), var(--auth-indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.auth-skyline {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: min(340px, 34vw);
-  height: auto;
-  color: rgba(255, 255, 255, 0.55);
-  pointer-events: none;
-}
-
-.auth-orb {
-  position: absolute;
-  top: var(--space-6);
-  right: var(--space-6);
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #fff;
-  color: var(--auth-violet);
-  box-shadow: 0 10px 26px rgba(46, 39, 104, 0.22);
+  color: #8fb1f5;
 }
 
 .auth-brand__lede {
@@ -1162,14 +1155,14 @@
   max-width: 46ch;
   font-size: var(--text-sm);
   line-height: 1.55;
-  color: var(--auth-muted);
+  color: var(--auth-brand-muted);
 }
 
 .auth-features {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 .auth-feature {
@@ -1185,64 +1178,26 @@
   width: 36px;
   height: 36px;
   border-radius: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #8fb1f5;
 }
 
 .auth-feature__title {
   font-size: var(--text-base);
   font-weight: 620;
-  color: var(--auth-ink);
+  color: var(--auth-brand-ink);
 }
 
 .auth-feature__text {
   font-size: var(--text-xs);
-  color: var(--auth-muted);
+  color: var(--auth-brand-muted);
 }
 
-/* Icon tints, one per capability. */
+/* Icon tints for role cards, one per role. */
 .tint-violet { background: #ede9ff; color: #6d5cf6; }
 .tint-blue   { background: #e4efff; color: #2f6fe0; }
 .tint-green  { background: #e3f7ec; color: #1a9553; }
 .tint-amber  { background: #fdf1de; color: #c4820c; }
-
-.auth-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-5);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid rgba(109, 92, 246, 0.14);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-}
-
-.auth-stat {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.auth-stat + .auth-stat {
-  border-left: 1px solid rgba(109, 92, 246, 0.14);
-  padding-left: var(--space-3);
-}
-
-.auth-stat__icon {
-  color: var(--auth-violet);
-  flex-shrink: 0;
-}
-
-.auth-stat__value {
-  font-size: var(--text-base);
-  font-weight: 680;
-  color: var(--auth-ink);
-  line-height: 1.15;
-}
-
-.auth-stat__label {
-  font-size: var(--text-xs);
-  color: var(--auth-muted);
-}
 
 /* --- Right: the card ----------------------------------------------------- */
 
@@ -1270,7 +1225,7 @@
   margin: 0 auto var(--space-2);
   border-radius: 14px;
   background: #ece9ff;
-  color: var(--auth-violet);
+  color: var(--auth-blue);
 }
 
 .auth-card__title {
@@ -1327,7 +1282,7 @@
 .auth-input:focus {
   outline: none;
   background: #fff;
-  border-color: var(--auth-violet);
+  border-color: var(--auth-blue);
   box-shadow: 0 0 0 4px rgba(109, 92, 246, 0.13);
 }
 
@@ -1357,7 +1312,7 @@
 
 .auth-field__toggle:hover {
   background: #f1eefe;
-  color: var(--auth-violet);
+  color: var(--auth-blue);
 }
 
 .auth-field__error {
@@ -1390,14 +1345,14 @@
 .auth-remember input {
   width: 15px;
   height: 15px;
-  accent-color: var(--auth-violet);
+  accent-color: var(--auth-blue);
 }
 
 .auth-forgot {
   border: none;
   background: transparent;
   padding: 0;
-  color: var(--auth-violet);
+  color: var(--auth-blue);
   font-weight: 600;
   cursor: pointer;
 }
@@ -1449,7 +1404,7 @@
 }
 
 .auth-role.is-selected {
-  border-color: var(--auth-violet);
+  border-color: var(--auth-blue);
   box-shadow: 0 6px 18px rgba(109, 92, 246, 0.18);
 }
 
@@ -1488,7 +1443,7 @@
   height: 21px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--auth-violet);
+  background: var(--auth-blue);
   color: #fff;
 }
 
@@ -1504,7 +1459,7 @@
   padding: 12px;
   border: none;
   border-radius: 13px;
-  background: linear-gradient(96deg, var(--auth-violet), var(--auth-indigo));
+  background: linear-gradient(96deg, var(--auth-blue), var(--auth-blue-deep));
   color: #fff;
   font-size: var(--text-md);
   font-weight: 620;
@@ -1556,12 +1511,12 @@
 
 .auth-note code {
   font-family: var(--font-mono);
-  color: var(--auth-violet);
+  color: var(--auth-blue);
   font-weight: 600;
 }
 
 .auth-note a {
-  color: var(--auth-violet);
+  color: var(--auth-blue);
   font-weight: 600;
 }
 
