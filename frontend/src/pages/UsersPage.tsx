@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { ApiError, api } from '../lib/api-client';
 import { useApiResource } from '../hooks/useApiResource';
 import { formatDate, titleCase } from '../lib/format';
 import {
+  Alert,
   Badge,
+  Button,
   Card,
   CardBody,
   CardHeader,
+  ConfirmDialog,
   ErrorState,
   PageHeader,
   Pagination,
@@ -38,11 +44,42 @@ const ROLE_VARIANT: Record<Role, 'success' | 'info' | 'warning' | 'neutral'> = {
 };
 
 export function UsersPage() {
+  const { user: currentUser } = useAuth();
+  const toast = useToast();
   const [page, setPage] = useState(1);
+  const [pending, setPending] = useState<{ user: PortalUser; activate: boolean } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const { data, meta, isLoading, error, refetch } = useApiResource<PortalUser[]>('/users', {
     page,
     limit: 10,
   });
+
+  const awaitingApproval = (data ?? []).filter((user) => !user.isActive).length;
+
+  async function applyStatus() {
+    if (!pending) return;
+    setActionError(null);
+    setIsSubmitting(true);
+    try {
+      await api.patch(`/users/${pending.user.id}`, { isActive: pending.activate });
+      toast.success(
+        pending.activate ? 'Account activated' : 'Account suspended',
+        pending.activate
+          ? `${pending.user.name} can now sign in.`
+          : `${pending.user.name} can no longer sign in.`,
+      );
+      setPending(null);
+      refetch();
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : 'Could not update the account. Please try again.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -52,6 +89,13 @@ export function UsersPage() {
       />
 
       <div className="stack">
+        {awaitingApproval > 0 ? (
+          <Alert variant="warning" title="Accounts awaiting approval">
+            {awaitingApproval} registered {awaitingApproval === 1 ? 'account is' : 'accounts are'}{' '}
+            inactive. Nobody can sign in until an administrator activates them.
+          </Alert>
+        ) : null}
+
         <Card>
           <CardHeader title="Role permissions" subtitle="What each role is allowed to do" />
           <CardBody>
@@ -69,15 +113,18 @@ export function UsersPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Accounts" />
+          <CardHeader
+            title="Accounts"
+            subtitle="Activate a newly registered account, or suspend one that should lose access"
+          />
           <CardBody flush>
             {isLoading && !data ? (
-              <TableSkeleton rows={5} columns={4} />
+              <TableSkeleton rows={5} columns={5} />
             ) : error ? (
               <ErrorState title="Could not load users" message={error.message} onRetry={refetch} />
             ) : (
               <div className="table-wrap">
-                <table className="table" style={{ minWidth: 560 }}>
+                <table className="table" style={{ minWidth: 680 }}>
                   <thead>
                     <tr>
                       <th>Name</th>
@@ -85,24 +132,51 @@ export function UsersPage() {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Created</th>
+                      <th aria-label="Actions" />
                     </tr>
                   </thead>
                   <tbody>
-                    {(data ?? []).map((user) => (
-                      <tr key={user.id}>
-                        <td className="table__primary">{user.name}</td>
-                        <td className="text-muted">{user.email}</td>
-                        <td>
-                          <Badge variant={ROLE_VARIANT[user.role]}>{titleCase(user.role)}</Badge>
-                        </td>
-                        <td>
-                          <Badge variant={user.isActive ? 'success' : 'neutral'}>
-                            {user.isActive ? 'Active' : 'Disabled'}
-                          </Badge>
-                        </td>
-                        <td className="text-muted nowrap">{formatDate(user.createdAt)}</td>
-                      </tr>
-                    ))}
+                    {(data ?? []).map((user) => {
+                      const isSelf = user.id === currentUser?.id;
+                      return (
+                        <tr key={user.id}>
+                          <td className="table__primary">
+                            {user.name}
+                            {isSelf ? <span className="text-subtle text-xs"> · you</span> : null}
+                          </td>
+                          <td className="text-muted">{user.email}</td>
+                          <td>
+                            <Badge variant={ROLE_VARIANT[user.role]}>{titleCase(user.role)}</Badge>
+                          </td>
+                          <td>
+                            <Badge variant={user.isActive ? 'success' : 'warning'}>
+                              {user.isActive ? 'Active' : 'Awaiting approval'}
+                            </Badge>
+                          </td>
+                          <td className="text-muted nowrap">{formatDate(user.createdAt)}</td>
+                          <td>
+                            <div className="table__actions">
+                              {isSelf ? (
+                                // Deactivating your own account would revoke the very
+                                // session doing it; the API rejects it too.
+                                <span className="text-subtle text-xs nowrap">—</span>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant={user.isActive ? 'ghost' : 'primary'}
+                                  onClick={() => {
+                                    setActionError(null);
+                                    setPending({ user, activate: !user.isActive });
+                                  }}
+                                >
+                                  {user.isActive ? 'Suspend' : 'Activate'}
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -120,6 +194,32 @@ export function UsersPage() {
           ) : null}
         </Card>
       </div>
+
+      {pending ? (
+        <ConfirmDialog
+          title={pending.activate ? 'Activate this account?' : 'Suspend this account?'}
+          message={
+            pending.activate ? (
+              <>
+                <strong>{pending.user.name}</strong> ({pending.user.email}) will be able to sign in
+                immediately with <strong>{titleCase(pending.user.role)}</strong> access.
+              </>
+            ) : (
+              <>
+                <strong>{pending.user.name}</strong> will be signed out and blocked from signing in
+                again until reactivated.
+              </>
+            )
+          }
+          confirmLabel={pending.activate ? 'Activate account' : 'Suspend account'}
+          variant={pending.activate ? 'primary' : 'danger'}
+          isSubmitting={isSubmitting}
+          onCancel={() => setPending(null)}
+          onConfirm={applyStatus}
+        >
+          {actionError ? <Alert variant="danger">{actionError}</Alert> : null}
+        </ConfirmDialog>
+      ) : null}
     </>
   );
 }
