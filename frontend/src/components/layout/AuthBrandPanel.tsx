@@ -1,4 +1,13 @@
-import { IconBox, IconReport, IconTruck, IconUsers } from '../ui/icons';
+import {
+  IconBolt,
+  IconBox,
+  IconChart,
+  IconReport,
+  IconShield,
+  IconSpark,
+  IconTruck,
+  IconUsers,
+} from '../ui/icons';
 
 /**
  * The left-hand identity and value panel shared by sign-in and registration.
@@ -8,66 +17,94 @@ import { IconBox, IconReport, IconTruck, IconUsers } from '../ui/icons';
  */
 
 const FEATURES = [
-  { Icon: IconUsers, title: 'Customer CRM', text: 'Leads, accounts and follow-ups in one pipeline' },
-  { Icon: IconBox, title: 'Inventory', text: 'Live stock levels with an audited movement ledger' },
-  { Icon: IconTruck, title: 'Sales & Dispatch', text: 'Challans that deduct stock transactionally' },
-  { Icon: IconReport, title: 'Accounts & Reports', text: 'Read-only visibility across every module' },
+  {
+    Icon: IconUsers,
+    tint: 'tint-violet',
+    title: 'Customer CRM',
+    text: 'Manage leads, customers and follow-ups',
+  },
+  {
+    Icon: IconBox,
+    tint: 'tint-blue',
+    title: 'Inventory Management',
+    text: 'Real-time stock tracking, alerts and valuation',
+  },
+  {
+    Icon: IconTruck,
+    tint: 'tint-green',
+    title: 'Sales & Dispatch',
+    text: 'Create challans, dispatch orders, track everything',
+  },
+  {
+    Icon: IconReport,
+    tint: 'tint-amber',
+    title: 'Accounts & Reports',
+    text: 'Financial reports, stock reports and insights',
+  },
+];
+
+const STATS = [
+  { Icon: IconUsers, value: '4', label: 'User Roles' },
+  { Icon: IconShield, value: '100%', label: 'Secure' },
+  { Icon: IconBolt, value: 'Real-time', label: 'Updates' },
+  { Icon: IconChart, value: 'Audited', label: 'Inventory' },
 ];
 
 export function AuthBrandPanel({
-  headline = 'Run your operation from',
+  headline = 'Run your entire business with',
   highlight = 'one connected system',
-  lede = 'Customers, inventory and dispatch for a wholesale distribution business — with stock levels that stay honest.',
+  lede = 'Manage customers, inventory, sales, warehouse and finance operations from a single, unified platform.',
 }: {
   headline?: string;
   highlight?: string;
   lede?: string;
-}) {
+} = {}) {
   return (
-    <aside className="auth-brand">
-      {/* A soft curved edge in place of a hard vertical rule between the two
-          panels. viewBox uses a 0–100 height so the path scales with the
-          column regardless of viewport height. */}
-      <svg
-        className="auth-brand__wave"
-        viewBox="0 0 40 100"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M0,0 H24 C 10,16 10,30 24,42 C 34,50 34,54 24,62 C 10,72 10,84 24,100 H0 Z"
-          fill="currentColor"
-        />
-        {/* A visible stroke along the curve itself — the two paper tones are
-            close enough that the fill alone reads as a straight edge. */}
-        <path
-          d="M24,0 C 10,16 10,30 24,42 C 34,50 34,54 24,62 C 10,72 10,84 24,100"
-          fill="none"
-          stroke="var(--rule)"
-          strokeWidth="1"
-          vectorEffect="non-scaling-stroke"
-        />
+    <section className="auth-brand">
+      {/* Decorative city skyline, anchored to the bottom-left corner. */}
+      <svg className="auth-skyline" viewBox="0 0 340 140" fill="currentColor" aria-hidden="true">
+        <rect x="0" y="70" width="28" height="70" />
+        <rect x="32" y="40" width="24" height="100" />
+        <rect x="60" y="88" width="20" height="52" />
+        <rect x="84" y="20" width="30" height="120" />
+        <rect x="118" y="60" width="22" height="80" />
+        <rect x="144" y="50" width="26" height="90" />
+        <rect x="174" y="94" width="18" height="46" />
+        <rect x="196" y="30" width="28" height="110" />
+        <rect x="228" y="66" width="20" height="74" />
+        <rect x="252" y="46" width="24" height="94" />
+        <rect x="280" y="82" width="20" height="58" />
+        <rect x="304" y="18" width="30" height="122" />
       </svg>
 
+      {/* Small round badge floating over the gradient. */}
+      <span className="auth-orb" aria-hidden="true">
+        <IconSpark width={20} height={20} />
+      </span>
+
       <header className="auth-brand__head">
-        <span className="auth-brand__mark">EC</span>
-        <span className="auth-brand__name">ERP &amp; CRM Operations</span>
+        <span className="auth-brand__mark">
+          <IconBox width={22} height={22} />
+        </span>
+        <div>
+          <div className="auth-brand__name">
+            ERP <em>+ CRM</em>
+          </div>
+          <div className="auth-brand__tagline">Operate. Manage. Grow.</div>
+        </div>
       </header>
 
-      <div>
-        <h1 className="auth-brand__headline">
-          {headline} <em>{highlight}</em>
-        </h1>
-        <p className="auth-brand__lede" style={{ marginTop: 'var(--space-4)' }}>
-          {lede}
-        </p>
-      </div>
+      <h1 className="auth-brand__headline">
+        {headline} <span>{highlight}</span>
+      </h1>
+
+      <p className="auth-brand__lede">{lede}</p>
 
       <div className="auth-features">
-        {FEATURES.map(({ Icon, title, text }) => (
+        {FEATURES.map(({ Icon, tint, title, text }) => (
           <div className="auth-feature" key={title}>
-            <span className="auth-feature__icon">
-              <Icon width={18} height={18} />
+            <span className={`auth-feature__icon ${tint}`}>
+              <Icon width={20} height={20} />
             </span>
             <div>
               <div className="auth-feature__title">{title}</div>
@@ -77,7 +114,19 @@ export function AuthBrandPanel({
         ))}
       </div>
 
-      <p className="auth-brand__foot">Internal use only · v1.0.0</p>
-    </aside>
+      <div className="auth-stats">
+        {STATS.map(({ Icon, value, label }) => (
+          <div className="auth-stat" key={label}>
+            <span className="auth-stat__icon">
+              <Icon width={17} height={17} />
+            </span>
+            <div>
+              <div className="auth-stat__value">{value}</div>
+              <div className="auth-stat__label">{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

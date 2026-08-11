@@ -6,7 +6,7 @@ import { ApiError, api } from '../lib/api-client';
 import { EMAIL_PATTERN } from '../lib/validation';
 import { Spinner } from '../components/ui';
 import { AuthBrandPanel } from '../components/layout/AuthBrandPanel';
-import { IconBox, IconReport, IconUsers } from '../components/ui/icons';
+import { IconBox, IconLock, IconMail, IconReport, IconUsers } from '../components/ui/icons';
 import type { AuthUser } from '../types/api';
 
 /**
@@ -18,9 +18,9 @@ import type { AuthUser } from '../types/api';
  * than a session.
  */
 const REQUESTABLE_ROLES = [
-  { value: 'SALES', Icon: IconUsers },
-  { value: 'WAREHOUSE', Icon: IconBox },
-  { value: 'ACCOUNTS', Icon: IconReport },
+  { value: 'SALES', tint: 'tint-green', blurb: 'Customers, follow-ups and challans', Icon: IconUsers },
+  { value: 'WAREHOUSE', tint: 'tint-amber', blurb: 'Products, stock and dispatch', Icon: IconBox },
+  { value: 'ACCOUNTS', tint: 'tint-blue', blurb: 'Read-only across every module', Icon: IconReport },
 ] as const;
 
 interface FormState {
@@ -107,152 +107,163 @@ export function RegisterPage() {
 
   return (
     <div className="auth">
-      <div className="auth__grid">
+      <div className="auth__inner">
         <AuthBrandPanel
           headline="Request access to"
           highlight="the operations portal"
           lede="Accounts are reviewed by an administrator before they go live, so customer, stock and dispatch data stays with the people who should see it."
         />
 
-        <main className="auth-main">
-          <div className="auth-shell">
-            <div className="auth-mast">
-              <span className="auth-mast__mark">EC</span>
-              <span className="auth-mast__name">ERP &amp; CRM Operations</span>
-            </div>
+        <section className="auth-card">
+          {submitted ? (
+            <>
+              <div className="auth-card__badge">
+                <IconUsers width={24} height={24} />
+              </div>
+              <h2 className="auth-card__title">Request submitted</h2>
+              <p className="auth-card__subtitle">
+                Thanks {submitted.name.split(' ')[0]} — your account has been created.
+              </p>
 
-            {submitted ? (
-              <>
-                <h1 className="auth-heading">Request sent</h1>
-                <div className="auth-rule" />
+              <div className="auth-success">
+                <strong>Waiting for approval.</strong> An administrator needs to activate{' '}
+                <strong>{submitted.email}</strong> before you can sign in. You requested{' '}
+                <strong>{submitted.role}</strong> access.
+              </div>
 
-                <div className="auth-success">
-                  An administrator needs to activate <strong>{submitted.email}</strong> before you
-                  can sign in. You requested <strong>{submitted.role.toLowerCase()}</strong> access.
+              <button
+                type="button"
+                className="auth-submit"
+                style={{ marginTop: 'var(--space-5)' }}
+                onClick={() => navigate('/login')}
+              >
+                Back to sign in
+              </button>
+
+              <p className="auth-note">
+                Evaluating the portal? The sign-in page has demo accounts for every role that
+                work immediately.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="auth-card__badge">
+                <IconUsers width={24} height={24} />
+              </div>
+              <h2 className="auth-card__title">Create an account</h2>
+              <p className="auth-card__subtitle">Request access to the operations portal</p>
+
+              {formError ? (
+                <div className="auth-alert" role="alert">
+                  {formError}
                 </div>
+              ) : null}
 
-                <button
-                  type="button"
-                  className="auth-submit"
-                  style={{ marginTop: 'var(--space-6)' }}
-                  onClick={() => navigate('/login')}
-                >
-                  Back to sign in
-                </button>
-
-                <p className="auth-note">
-                  Evaluating the portal? The sign-in page has demo accounts that work immediately.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1 className="auth-heading">Request access</h1>
-                <div className="auth-rule" />
-                <p className="auth-lede">
-                  Accounts are reviewed by an administrator before they go live.
-                </p>
-
-                {formError ? (
-                  <div className="auth-alert" role="alert">
-                    {formError}
-                  </div>
-                ) : null}
-
-                <form className="auth-form" onSubmit={handleSubmit} noValidate>
-                  <div>
-                    <label className="auth-label" htmlFor="reg-name">
-                      Full name
-                    </label>
+              <form className="auth-form" onSubmit={handleSubmit} noValidate>
+                <div>
+                  <div className="auth-field">
+                    <span className="auth-field__icon">
+                      <IconUsers width={18} height={18} />
+                    </span>
                     <input
-                      id="reg-name"
                       className={`auth-input ${errors.name ? 'has-error' : ''}`}
+                      placeholder="Full name"
+                      aria-label="Full name"
                       autoComplete="name"
-                      placeholder="Priya Sharma"
                       value={form.name}
                       onChange={(event) => setField('name', event.target.value)}
                       disabled={isSubmitting}
                     />
-                    {errors.name ? <span className="auth-field__error">{errors.name}</span> : null}
                   </div>
+                  {errors.name ? <span className="auth-field__error">{errors.name}</span> : null}
+                </div>
 
-                  <div>
-                    <label className="auth-label" htmlFor="reg-email">
-                      Work email
-                    </label>
+                <div>
+                  <div className="auth-field">
+                    <span className="auth-field__icon">
+                      <IconMail width={18} height={18} />
+                    </span>
                     <input
-                      id="reg-email"
                       className={`auth-input ${errors.email ? 'has-error' : ''}`}
                       type="email"
+                      placeholder="Work email"
+                      aria-label="Work email"
                       autoComplete="username"
-                      placeholder="you@company.com"
                       value={form.email}
                       onChange={(event) => setField('email', event.target.value)}
                       disabled={isSubmitting}
                     />
-                    {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
                   </div>
+                  {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
+                </div>
 
-                  <div>
-                    <label className="auth-label" htmlFor="reg-password">
-                      Password
-                    </label>
+                <div>
+                  <div className="auth-field">
+                    <span className="auth-field__icon">
+                      <IconLock width={18} height={18} />
+                    </span>
                     <input
-                      id="reg-password"
                       className={`auth-input ${errors.password ? 'has-error' : ''}`}
                       type="password"
+                      placeholder="Password"
+                      aria-label="Password"
                       autoComplete="new-password"
-                      placeholder="At least 8 characters, with a number"
                       value={form.password}
                       onChange={(event) => setField('password', event.target.value)}
                       disabled={isSubmitting}
                     />
-                    {errors.password ? (
-                      <span className="auth-field__error">{errors.password}</span>
-                    ) : null}
                   </div>
+                  {errors.password ? (
+                    <span className="auth-field__error">{errors.password}</span>
+                  ) : (
+                    <span className="auth-field__error" style={{ color: 'var(--auth-muted)' }}>
+                      At least 8 characters, with a letter and a number
+                    </span>
+                  )}
+                </div>
 
-                  <div>
-                    <span className="auth-label">Team</span>
-                    <div className="auth-roles" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                      {REQUESTABLE_ROLES.map(({ value, Icon }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={`auth-role ${form.requestedRole === value ? 'is-selected' : ''}`}
-                          onClick={() => setField('requestedRole', value)}
-                          disabled={isSubmitting}
-                          aria-pressed={form.requestedRole === value}
-                        >
-                          <span className="auth-role__icon">
-                            <Icon width={18} height={18} />
-                          </span>
-                          <span className="auth-role__label">
-                            {value.charAt(0) + value.slice(1).toLowerCase()}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <h3 className="auth-roles__heading">Which team are you joining?</h3>
+                <p className="auth-roles__hint">An administrator confirms this on approval</p>
 
-                  <button type="submit" className="auth-submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <span className="auth-spinner" aria-hidden="true" />
-                        Sending
-                      </>
-                    ) : (
-                      'Request access'
-                    )}
-                  </button>
-                </form>
+                <div className="auth-roles" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                  {REQUESTABLE_ROLES.map(({ value, tint, blurb, Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`auth-role ${form.requestedRole === value ? 'is-selected' : ''}`}
+                      onClick={() => setField('requestedRole', value)}
+                      disabled={isSubmitting}
+                      aria-pressed={form.requestedRole === value}
+                    >
+                      <span className={`auth-role__icon ${tint}`}>
+                        <Icon width={20} height={20} />
+                      </span>
+                      <span className="auth-role__name">
+                        {value.charAt(0) + value.slice(1).toLowerCase()}
+                      </span>
+                      <span className="auth-role__text">{blurb}</span>
+                    </button>
+                  ))}
+                </div>
 
-                <p className="auth-note">
-                  Already have an account? <Link to="/login">Sign in</Link>
-                </p>
-              </>
-            )}
-          </div>
-        </main>
+                <button type="submit" className="auth-submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="auth-spinner" aria-hidden="true" />
+                      Creating account…
+                    </>
+                  ) : (
+                    'Request access'
+                  )}
+                </button>
+              </form>
+
+              <p className="auth-note">
+                Already have an account? <Link to="/login">Sign in</Link>
+              </p>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

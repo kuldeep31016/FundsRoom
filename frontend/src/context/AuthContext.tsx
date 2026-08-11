@@ -15,7 +15,7 @@ interface AuthContextValue {
   /** True while the stored token is being validated on first paint. */
   isInitialising: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, remember?: boolean) => Promise<AuthUser>;
   logout: () => void;
   /**
    * Mirrors the backend permission matrix. UX only — the API enforces the same
@@ -70,13 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, remember = true) => {
     const { data } = await api.post<LoginResponse>(
       '/auth/login',
       { email, password },
       { skipAuthRedirect: true },
     );
-    tokenStorage.set(data.token);
+    tokenStorage.set(data.token, remember);
     setUser(data.user);
     return data.user;
   }, []);

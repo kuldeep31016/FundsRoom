@@ -66,3 +66,56 @@ export const IconReport = (props: IconProps) => (
     <path d="M14 2v6h6M8 13h8M8 17h5" />
   </svg>
 );
+
+export const IconLock = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="4" y="10" width="16" height="11" rx="2" />
+    <path d="M8 10V7a4 4 0 1 1 8 0v3" />
+  </svg>
+);
+
+export const IconMail = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="m2 7 10 6 10-6" />
+  </svg>
+);
+
+export const IconEye = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+export const IconEyeOff = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M9.9 5.2A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.2 6.2A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.2-.9" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20" />
+  </svg>
+);
+
+export const IconBolt = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
+  </svg>
+);
+
+export const IconChart = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M3 3v18h18" />
+    <path d="M7 15l4-5 3 3 5-7" />
+  </svg>
+);
+
+export const IconCheck = (props: IconProps) => (
+  <svg {...base({ strokeWidth: 3, ...props })}>
+    <path d="m5 13 4 4L19 7" />
+  </svg>
+);
+
+export const IconSpark = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
+  </svg>
+);

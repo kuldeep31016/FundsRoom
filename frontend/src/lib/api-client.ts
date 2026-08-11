@@ -52,17 +52,32 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Token storage backing "Remember me".
+ *
+ * `remember: true` writes to `localStorage`, which survives closing the
+ * browser. `remember: false` writes to `sessionStorage`, which the browser
+ * clears when the tab closes — a genuine difference in behaviour, not a
+ * decorative checkbox. `get`/`clear` touch both stores so a session started
+ * either way is found and fully torn down on logout.
+ */
 export const tokenStorage = {
   get(): string | null {
     try {
-      return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+      return window.sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? window.localStorage.getItem(TOKEN_STORAGE_KEY);
     } catch {
       return null;
     }
   },
-  set(token: string): void {
+  set(token: string, remember = true): void {
     try {
-      window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      if (remember) {
+        window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      } else {
+        window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
     } catch {
       /* storage unavailable (private mode) — the session simply won't persist */
     }
@@ -70,6 +85,7 @@ export const tokenStorage = {
   clear(): void {
     try {
       window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
     } catch {
       /* no-op */
     }
