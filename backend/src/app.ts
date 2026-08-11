@@ -11,6 +11,24 @@ import apiRoutes from './routes';
 
 export const API_PREFIX = '/api/v1';
 
+/**
+ * Matches an origin against a CORS_ORIGINS entry, where `*` in the entry
+ * stands for any run of characters. Lets one entry (e.g.
+ * `https://funds-room-*-kuldeep31016s-projects.vercel.app`) cover every
+ * per-deployment Vercel preview URL instead of needing a new exact match
+ * added to Render each time a deployment gets a fresh URL.
+ */
+export function originMatchesPattern(origin: string, pattern: string): boolean {
+  if (!pattern.includes('*')) return pattern === origin;
+  const regex = new RegExp(
+    `^${pattern
+      .split('*')
+      .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+      .join('.*')}$`,
+  );
+  return regex.test(origin);
+}
+
 export function createApp(): Express {
   const app = express();
 
@@ -27,7 +45,10 @@ export function createApp(): Express {
       origin(origin, callback) {
         // Server-to-server calls (curl, Postman, health checks) send no Origin.
         if (!origin) return callback(null, true);
-        if (env.corsOrigins.includes('*') || env.corsOrigins.includes(origin)) {
+        if (
+          env.corsOrigins.includes('*') ||
+          env.corsOrigins.some((pattern) => originMatchesPattern(origin, pattern))
+        ) {
           return callback(null, true);
         }
         // Rejected as an explicit 403 rather than a generic Error, which would
