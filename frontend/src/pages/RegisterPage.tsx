@@ -5,6 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api-client';
 import { EMAIL_PATTERN } from '../lib/validation';
 import { Spinner } from '../components/ui';
+import { AuthBrandPanel } from '../components/layout/AuthBrandPanel';
+import { IconBox, IconReport, IconUsers } from '../components/ui/icons';
 import type { AuthUser } from '../types/api';
 
 /**
@@ -15,7 +17,11 @@ import type { AuthUser } from '../types/api';
  * an administrator approves them, so this page ends in a confirmation rather
  * than a session.
  */
-const REQUESTABLE_ROLES = ['SALES', 'WAREHOUSE', 'ACCOUNTS'] as const;
+const REQUESTABLE_ROLES = [
+  { value: 'SALES', Icon: IconUsers },
+  { value: 'WAREHOUSE', Icon: IconBox },
+  { value: 'ACCOUNTS', Icon: IconReport },
+] as const;
 
 interface FormState {
   name: string;
@@ -101,137 +107,152 @@ export function RegisterPage() {
 
   return (
     <div className="auth">
-      <div className="auth-shell">
-        <header className="auth-mast">
-          <span className="auth-mast__mark">EC</span>
-          <span className="auth-mast__name">ERP &amp; CRM Operations</span>
-        </header>
+      <div className="auth__grid">
+        <AuthBrandPanel
+          headline="Request access to"
+          highlight="the operations portal"
+          lede="Accounts are reviewed by an administrator before they go live, so customer, stock and dispatch data stays with the people who should see it."
+        />
 
-        {submitted ? (
-          <>
-            <h1 className="auth-heading">Request sent</h1>
-            <div className="auth-rule" />
-
-            <div className="auth-success">
-              An administrator needs to activate <strong>{submitted.email}</strong> before you can
-              sign in. You requested <strong>{submitted.role.toLowerCase()}</strong> access.
+        <main className="auth-main">
+          <div className="auth-shell">
+            <div className="auth-mast">
+              <span className="auth-mast__mark">EC</span>
+              <span className="auth-mast__name">ERP &amp; CRM Operations</span>
             </div>
 
-            <button
-              type="button"
-              className="auth-submit"
-              style={{ marginTop: 'var(--space-6)' }}
-              onClick={() => navigate('/login')}
-            >
-              Back to sign in
-            </button>
+            {submitted ? (
+              <>
+                <h1 className="auth-heading">Request sent</h1>
+                <div className="auth-rule" />
 
-            <p className="auth-note">
-              Evaluating the portal? The sign-in page has demo accounts that work immediately.
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="auth-heading">Request access</h1>
-            <div className="auth-rule" />
-            <p className="auth-lede">
-              Accounts are reviewed by an administrator before they go live.
-            </p>
-
-            {formError ? (
-              <div className="auth-alert" role="alert">
-                {formError}
-              </div>
-            ) : null}
-
-            <form className="auth-form" onSubmit={handleSubmit} noValidate>
-              <div>
-                <label className="auth-label" htmlFor="reg-name">
-                  Full name
-                </label>
-                <input
-                  id="reg-name"
-                  className={`auth-input ${errors.name ? 'has-error' : ''}`}
-                  autoComplete="name"
-                  placeholder="Priya Sharma"
-                  value={form.name}
-                  onChange={(event) => setField('name', event.target.value)}
-                  disabled={isSubmitting}
-                />
-                {errors.name ? <span className="auth-field__error">{errors.name}</span> : null}
-              </div>
-
-              <div>
-                <label className="auth-label" htmlFor="reg-email">
-                  Work email
-                </label>
-                <input
-                  id="reg-email"
-                  className={`auth-input ${errors.email ? 'has-error' : ''}`}
-                  type="email"
-                  autoComplete="username"
-                  placeholder="you@company.com"
-                  value={form.email}
-                  onChange={(event) => setField('email', event.target.value)}
-                  disabled={isSubmitting}
-                />
-                {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
-              </div>
-
-              <div>
-                <label className="auth-label" htmlFor="reg-password">
-                  Password
-                </label>
-                <input
-                  id="reg-password"
-                  className={`auth-input ${errors.password ? 'has-error' : ''}`}
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="At least 8 characters, with a number"
-                  value={form.password}
-                  onChange={(event) => setField('password', event.target.value)}
-                  disabled={isSubmitting}
-                />
-                {errors.password ? (
-                  <span className="auth-field__error">{errors.password}</span>
-                ) : null}
-              </div>
-
-              <div>
-                <span className="auth-label">Team</span>
-                <div className="auth-roles" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                  {REQUESTABLE_ROLES.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      className={`auth-role ${form.requestedRole === role ? 'is-selected' : ''}`}
-                      onClick={() => setField('requestedRole', role)}
-                      disabled={isSubmitting}
-                      aria-pressed={form.requestedRole === role}
-                    >
-                      {role.charAt(0) + role.slice(1).toLowerCase()}
-                    </button>
-                  ))}
+                <div className="auth-success">
+                  An administrator needs to activate <strong>{submitted.email}</strong> before you
+                  can sign in. You requested <strong>{submitted.role.toLowerCase()}</strong> access.
                 </div>
-              </div>
 
-              <button type="submit" className="auth-submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <span className="auth-spinner" aria-hidden="true" />
-                    Sending
-                  </>
-                ) : (
-                  'Request access'
-                )}
-              </button>
-            </form>
+                <button
+                  type="button"
+                  className="auth-submit"
+                  style={{ marginTop: 'var(--space-6)' }}
+                  onClick={() => navigate('/login')}
+                >
+                  Back to sign in
+                </button>
 
-            <p className="auth-note">
-              Already have an account? <Link to="/login">Sign in</Link>
-            </p>
-          </>
-        )}
+                <p className="auth-note">
+                  Evaluating the portal? The sign-in page has demo accounts that work immediately.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="auth-heading">Request access</h1>
+                <div className="auth-rule" />
+                <p className="auth-lede">
+                  Accounts are reviewed by an administrator before they go live.
+                </p>
+
+                {formError ? (
+                  <div className="auth-alert" role="alert">
+                    {formError}
+                  </div>
+                ) : null}
+
+                <form className="auth-form" onSubmit={handleSubmit} noValidate>
+                  <div>
+                    <label className="auth-label" htmlFor="reg-name">
+                      Full name
+                    </label>
+                    <input
+                      id="reg-name"
+                      className={`auth-input ${errors.name ? 'has-error' : ''}`}
+                      autoComplete="name"
+                      placeholder="Priya Sharma"
+                      value={form.name}
+                      onChange={(event) => setField('name', event.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    {errors.name ? <span className="auth-field__error">{errors.name}</span> : null}
+                  </div>
+
+                  <div>
+                    <label className="auth-label" htmlFor="reg-email">
+                      Work email
+                    </label>
+                    <input
+                      id="reg-email"
+                      className={`auth-input ${errors.email ? 'has-error' : ''}`}
+                      type="email"
+                      autoComplete="username"
+                      placeholder="you@company.com"
+                      value={form.email}
+                      onChange={(event) => setField('email', event.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
+                  </div>
+
+                  <div>
+                    <label className="auth-label" htmlFor="reg-password">
+                      Password
+                    </label>
+                    <input
+                      id="reg-password"
+                      className={`auth-input ${errors.password ? 'has-error' : ''}`}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="At least 8 characters, with a number"
+                      value={form.password}
+                      onChange={(event) => setField('password', event.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    {errors.password ? (
+                      <span className="auth-field__error">{errors.password}</span>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <span className="auth-label">Team</span>
+                    <div className="auth-roles" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                      {REQUESTABLE_ROLES.map(({ value, Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`auth-role ${form.requestedRole === value ? 'is-selected' : ''}`}
+                          onClick={() => setField('requestedRole', value)}
+                          disabled={isSubmitting}
+                          aria-pressed={form.requestedRole === value}
+                        >
+                          <span className="auth-role__icon">
+                            <Icon width={18} height={18} />
+                          </span>
+                          <span className="auth-role__label">
+                            {value.charAt(0) + value.slice(1).toLowerCase()}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button type="submit" className="auth-submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <span className="auth-spinner" aria-hidden="true" />
+                        Sending
+                      </>
+                    ) : (
+                      'Request access'
+                    )}
+                  </button>
+                </form>
+
+                <p className="auth-note">
+                  Already have an account? <Link to="/login">Sign in</Link>
+                </p>
+              </>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

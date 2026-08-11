@@ -5,6 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { ApiError } from '../lib/api-client';
 import { EMAIL_PATTERN } from '../lib/validation';
 import { Spinner } from '../components/ui';
+import { AuthBrandPanel } from '../components/layout/AuthBrandPanel';
+import { IconBox, IconCrown, IconReport, IconUsers } from '../components/ui/icons';
 import type { Role } from '../types/api';
 
 /**
@@ -14,11 +16,11 @@ import type { Role } from '../types/api';
  * still goes through `POST /auth/login` when the button is pressed, so this is
  * a shortcut past typing rather than a bypass of authentication.
  */
-const DEMO_ROLES: Array<{ role: Role; email: string }> = [
-  { role: 'ADMIN', email: 'admin@erpcrm.test' },
-  { role: 'SALES', email: 'sales@erpcrm.test' },
-  { role: 'WAREHOUSE', email: 'warehouse@erpcrm.test' },
-  { role: 'ACCOUNTS', email: 'accounts@erpcrm.test' },
+const DEMO_ROLES: Array<{ role: Role; email: string; Icon: typeof IconCrown }> = [
+  { role: 'ADMIN', email: 'admin@erpcrm.test', Icon: IconCrown },
+  { role: 'SALES', email: 'sales@erpcrm.test', Icon: IconUsers },
+  { role: 'WAREHOUSE', email: 'warehouse@erpcrm.test', Icon: IconBox },
+  { role: 'ACCOUNTS', email: 'accounts@erpcrm.test', Icon: IconReport },
 ];
 
 const DEMO_PASSWORD = 'Password@123';
@@ -92,109 +94,122 @@ export function LoginPage() {
 
   return (
     <div className="auth">
-      <div className="auth-shell">
-        <header className="auth-mast">
-          <span className="auth-mast__mark">EC</span>
-          <span className="auth-mast__name">ERP &amp; CRM Operations</span>
-        </header>
+      <div className="auth__grid">
+        <AuthBrandPanel />
 
-        <h1 className="auth-heading">Sign in</h1>
-        <div className="auth-rule" />
-        <p className="auth-lede">Customers, inventory and dispatch in one place.</p>
-
-        {formError ? (
-          <div className="auth-alert" role="alert">
-            {formError}
-          </div>
-        ) : null}
-
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          <div>
-            <label className="auth-label" htmlFor="auth-email">
-              Email
-            </label>
-            <input
-              id="auth-email"
-              className={`auth-input ${errors.email ? 'has-error' : ''}`}
-              type="email"
-              name="email"
-              autoComplete="username"
-              placeholder="you@company.com"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                setErrors((current) => ({ ...current, email: undefined }));
-              }}
-              disabled={isSubmitting}
-            />
-            {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
-          </div>
-
-          <div>
-            <label className="auth-label" htmlFor="auth-password">
-              Password
-            </label>
-            <div className="auth-field">
-              <input
-                id="auth-password"
-                className={`auth-input ${errors.password ? 'has-error' : ''}`}
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setErrors((current) => ({ ...current, password: undefined }));
-                }}
-                disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                className="auth-field__toggle"
-                onClick={() => setShowPassword((shown) => !shown)}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+        <main className="auth-main">
+          <div className="auth-shell">
+            <div className="auth-mast">
+              <span className="auth-mast__mark">EC</span>
+              <span className="auth-mast__name">ERP &amp; CRM Operations</span>
             </div>
-            {errors.password ? <span className="auth-field__error">{errors.password}</span> : null}
-          </div>
 
-          <div>
-            <span className="auth-label">Demo role</span>
-            <div className="auth-roles">
-              {DEMO_ROLES.map(({ role, email: roleEmail }) => (
-                <button
-                  key={role}
-                  type="button"
-                  className={`auth-role ${selectedRole === role ? 'is-selected' : ''}`}
-                  onClick={() => chooseRole(role, roleEmail)}
+            <h1 className="auth-heading">Sign in</h1>
+            <div className="auth-rule" />
+            <p className="auth-lede">Welcome back — pick up right where you left off.</p>
+
+            {formError ? (
+              <div className="auth-alert" role="alert">
+                {formError}
+              </div>
+            ) : null}
+
+            <form className="auth-form" onSubmit={handleSubmit} noValidate>
+              <div>
+                <label className="auth-label" htmlFor="auth-email">
+                  Email
+                </label>
+                <input
+                  id="auth-email"
+                  className={`auth-input ${errors.email ? 'has-error' : ''}`}
+                  type="email"
+                  name="email"
+                  autoComplete="username"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setErrors((current) => ({ ...current, email: undefined }));
+                  }}
                   disabled={isSubmitting}
-                  aria-pressed={selectedRole === role}
-                >
-                  {role.charAt(0) + role.slice(1).toLowerCase()}
-                </button>
-              ))}
-            </div>
+                />
+                {errors.email ? <span className="auth-field__error">{errors.email}</span> : null}
+              </div>
+
+              <div>
+                <label className="auth-label" htmlFor="auth-password">
+                  Password
+                </label>
+                <div className="auth-field">
+                  <input
+                    id="auth-password"
+                    className={`auth-input ${errors.password ? 'has-error' : ''}`}
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setErrors((current) => ({ ...current, password: undefined }));
+                    }}
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    className="auth-field__toggle"
+                    onClick={() => setShowPassword((shown) => !shown)}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                {errors.password ? (
+                  <span className="auth-field__error">{errors.password}</span>
+                ) : null}
+              </div>
+
+              <div>
+                <span className="auth-label">Demo role</span>
+                <div className="auth-roles">
+                  {DEMO_ROLES.map(({ role, email: roleEmail, Icon }) => (
+                    <button
+                      key={role}
+                      type="button"
+                      className={`auth-role ${selectedRole === role ? 'is-selected' : ''}`}
+                      onClick={() => chooseRole(role, roleEmail)}
+                      disabled={isSubmitting}
+                      aria-pressed={selectedRole === role}
+                    >
+                      <span className="auth-role__icon">
+                        <Icon width={18} height={18} />
+                      </span>
+                      <span className="auth-role__label">
+                        {role.charAt(0) + role.slice(1).toLowerCase()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button type="submit" className="auth-submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <span className="auth-spinner" aria-hidden="true" />
+                    Signing in
+                  </>
+                ) : (
+                  'Sign in'
+                )}
+              </button>
+            </form>
+
+            <p className="auth-note">
+              Demo password <code>{DEMO_PASSWORD}</code>
+              <br />
+              Need your own account? <Link to="/register">Request access</Link>
+            </p>
           </div>
-
-          <button type="submit" className="auth-submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <span className="auth-spinner" aria-hidden="true" />
-                Signing in
-              </>
-            ) : (
-              'Sign in'
-            )}
-          </button>
-        </form>
-
-        <p className="auth-note">
-          Demo password <code>{DEMO_PASSWORD}</code>
-          <br />
-          Need your own account? <Link to="/register">Request access</Link>
-        </p>
+        </main>
       </div>
     </div>
   );
