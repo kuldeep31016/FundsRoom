@@ -4,8 +4,13 @@ import { env } from '../../config/env';
 import { authenticate } from '../../middleware/auth.middleware';
 import { validateBody } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/async-handler';
-import { loginController, logoutController, meController } from './auth.controller';
-import { loginSchema } from './auth.schema';
+import {
+  loginController,
+  logoutController,
+  meController,
+  registerController,
+} from './auth.controller';
+import { loginSchema, registerSchema } from './auth.schema';
 
 const router = Router();
 
@@ -26,6 +31,14 @@ const loginLimiter = rateLimit({
 });
 
 router.post('/login', loginLimiter, validateBody(loginSchema), asyncHandler(loginController));
+// Registration is public, so it shares the strict credential-endpoint budget.
+router.post(
+  '/register',
+  loginLimiter,
+  validateBody(registerSchema),
+  asyncHandler(registerController),
+);
+
 router.get('/me', authenticate, asyncHandler(meController));
 router.post('/logout', authenticate, asyncHandler(logoutController));
 

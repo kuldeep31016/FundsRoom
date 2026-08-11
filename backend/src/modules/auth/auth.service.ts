@@ -153,3 +153,37 @@ export async function getProfile(userId: string): Promise<PublicUser & { permiss
   }
   return { ...toPublicUser(user), permissions: ROLE_PERMISSIONS[user.role] };
 }
+
+/**
+ * Create a self-registered account.
+ *
+ * The account is inserted with `is_active = false`, so the credentials are valid
+ * but sign-in is refused with 403 ACCOUNT_DISABLED until an administrator
+ * activates it. No token is issued here — registering is a request for access,
+ * not a grant of it.
+ */
+export async function register(input: {
+  name: string;
+  email: string;
+  password: string;
+  requestedRole: Exclude<Role, 'ADMIN'>;
+}): Promise<PublicUser> {
+  const existing = await findUserByEmail(input.email);
+  if (existing) {
+    throw ApiError.conflict(
+      'An account with this email already exists.',
+      ERROR_CODES.DUPLICATE_EMAIL,
+    );
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  const { rows } = await query<UserRecord>(
+    `INSERT INTO users (name, email, password_hash, role, is_active)
+     VALUES ($1, $2, $3, $4::user_role, false)
+     RETURNING id, name, email, password_hash, role, is_active, created_at, updated_at`,
+    [input.name, input.email, passwordHash, input.requestedRole],
+  );
+
+  return toPublicUser(rows[0] as UserRecord);
+}
