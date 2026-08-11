@@ -114,14 +114,15 @@ export function RegisterPage() {
           lede="Accounts are reviewed by an administrator before they go live, so customer, stock and dispatch data stays with the people who should see it."
         />
 
-        <section className="auth-card">
+        <section className="auth-panel">
+          <div className="auth-panel__inner">
           {submitted ? (
             <>
               <div className="auth-card__badge">
                 <IconUsers width={24} height={24} />
               </div>
-              <h2 className="auth-card__title">Request submitted</h2>
-              <p className="auth-card__subtitle">
+              <h2 className="auth-panel__title">Request submitted</h2>
+              <p className="auth-panel__subtitle">
                 Thanks {submitted.name.split(' ')[0]} — your account has been created.
               </p>
 
@@ -150,8 +151,8 @@ export function RegisterPage() {
               <div className="auth-card__badge">
                 <IconUsers width={24} height={24} />
               </div>
-              <h2 className="auth-card__title">Create an account</h2>
-              <p className="auth-card__subtitle">Request access to the operations portal</p>
+              <h2 className="auth-panel__title">Create an account</h2>
+              <p className="auth-panel__subtitle">Request access to the operations portal</p>
 
               {formError ? (
                 <div className="auth-alert" role="alert">
@@ -263,6 +264,7 @@ export function RegisterPage() {
               </p>
             </>
           )}
+          </div>
         </section>
       </div>
     </div>

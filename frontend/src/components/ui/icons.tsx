@@ -88,8 +88,8 @@ export const IconEyeOff = (props: IconProps) => (
   </svg>
 );
 
-export const IconCheck = (props: IconProps) => (
-  <svg {...base({ strokeWidth: 3, ...props })}>
-    <path d="m5 13 4 4L19 7" />
+export const IconArrowLeft = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M19 12H5M11 18l-6-6 6-6" />
   </svg>
 );

@@ -1086,11 +1086,6 @@
 .auth__inner {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-5) var(--space-6);
   min-height: 100vh;
 }
 
@@ -1099,13 +1094,17 @@
 .auth-brand {
   position: relative;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-8) clamp(var(--space-6), 6vw, 88px);
 }
 
 .auth-brand__head {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
 }
 
 .auth-brand__mark {
@@ -1199,22 +1198,23 @@
 .tint-green  { background: #e3f7ec; color: #1a9553; }
 .tint-amber  { background: #fdf1de; color: #c4820c; }
 
-/* --- Right: the card ----------------------------------------------------- */
+/* --- Right: a plain full-height panel, no floating card ------------------ */
 
-.auth-card {
+.auth-panel {
   width: 100%;
-  max-width: 500px;
-  max-height: calc(100vh - var(--space-10));
+  max-height: 100vh;
   overflow-y: auto;
-  margin-left: auto;
-  padding: var(--space-6) var(--space-7);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  /* A slightly organic shape rather than a plain rounded rectangle: the
-     inner (top-left/bottom-left) corners sweep wider than the outer ones. */
-  border-radius: 42px 22px 22px 42px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 24px 60px rgba(46, 39, 104, 0.14);
-  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: -1px 0 0 rgba(15, 23, 42, 0.06);
+}
+
+.auth-panel__inner {
+  width: 100%;
+  max-width: 460px;
+  padding: var(--space-8) var(--space-6);
 }
 
 .auth-card__badge {
@@ -1228,7 +1228,7 @@
   color: var(--auth-blue);
 }
 
-.auth-card__title {
+.auth-panel__title {
   text-align: center;
   font-size: var(--text-lg);
   font-weight: 700;
@@ -1236,11 +1236,48 @@
   color: var(--auth-ink);
 }
 
-.auth-card__subtitle {
-  margin-top: 2px;
+.auth-panel__subtitle {
+  margin-top: 4px;
   text-align: center;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--auth-muted);
+}
+
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-5);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--auth-muted);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.auth-back:hover {
+  color: var(--auth-blue);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  color: var(--auth-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
 }
 
 .auth-form {
@@ -1433,18 +1470,31 @@
   color: var(--auth-muted);
 }
 
-.auth-role__check {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  display: grid;
-  place-items: center;
-  width: 21px;
-  height: 21px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: var(--auth-blue);
-  color: #fff;
+/* The picker view uses two columns of larger, roomier cards. */
+.auth-roles--picker {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.auth-roles--picker .auth-role {
+  align-items: flex-start;
+  text-align: left;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.auth-roles--picker .auth-role__icon {
+  width: 40px;
+  height: 40px;
+}
+
+.auth-roles--picker .auth-role__name {
+  font-size: var(--text-base);
+}
+
+.auth-roles--picker .auth-role__text {
+  font-size: var(--text-xs);
 }
 
 /* --- Submit and footer --------------------------------------------------- */
@@ -1556,37 +1606,39 @@
 @media (max-width: 1080px) {
   .auth__inner {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-6);
-    padding: var(--space-6) var(--space-4);
+    min-height: 0;
   }
 
-  .auth-card {
-    margin: 0 auto;
+  .auth-brand {
+    min-height: 0;
+    padding: var(--space-6) var(--space-5);
+  }
+
+  .auth-panel {
+    max-height: none;
   }
 
   /* Keep the identity and the headline; drop the supporting detail. */
-  .auth-features,
-  .auth-stats {
+  .auth-features {
     display: none;
   }
 
   .auth-brand__head {
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-4);
   }
 
   .auth-brand__headline {
-    font-size: 28px;
+    font-size: 26px;
     max-width: none;
   }
 }
 
 @media (max-width: 560px) {
-  .auth-card {
-    padding: var(--space-5);
-    border-radius: 20px;
+  .auth-panel__inner {
+    padding: var(--space-6) var(--space-4);
   }
 
-  .auth-roles {
+  .auth-roles--picker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
